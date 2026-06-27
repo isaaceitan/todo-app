@@ -428,7 +428,7 @@ async function loadData() {
         data,
         error
       } = await sb.from('app_state').select('data').eq('id', 'main').maybeSingle();
-      if (!error && data && data.data) return data.data;
+      if (!error && data && data.data && data.data.tasks) return data.data;
     } catch (e) {
       console.warn('cloud load falló, uso local', e);
     }
