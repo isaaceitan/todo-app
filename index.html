@@ -206,6 +206,162 @@
   .pill.on { background: var(--grad); color: #fff; border: none; }
   .sync-badge { font-size: 10px; padding: 3px 8px; border-radius: 100px; background: var(--surface-soft); color: var(--text-3); }
   .sync-badge.on { color: #34C77B; }
+
+  /* ── Mobile improvements ── */
+  .task { transition: transform 0.15s ease, opacity 0.15s ease; }
+  .task:active { transform: scale(0.985); }
+  .icon-btn { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
+  .fab { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+  .fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(79,140,255,0.3); }
+  @keyframes up { from { transform: translateY(110%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .sheet { animation: up 0.28s cubic-bezier(0.34,1.12,0.64,1); }
+  .option { min-height: 52px; transition: background 0.12s; }
+  .option:active { background: var(--surface-soft); }
+  .nav-item { min-height: 48px; }
+  .cal-day { min-height: 40px; }
+
+  /* ── Desktop layout (≥ 768px) ── */
+  @media (min-width: 768px) {
+    #root { max-width: 100%; display: flex; height: 100vh; overflow: hidden; }
+
+    .app { flex-direction: row; width: 100%; min-height: 100vh; }
+
+    /* Sidebar nav */
+    .nav {
+      position: static;
+      flex-direction: column;
+      width: 220px;
+      min-width: 220px;
+      height: 100vh;
+      padding: 28px 12px 28px;
+      border-top: none;
+      border-right: 1px solid var(--border);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      background: var(--bg-2);
+      gap: 4px;
+      justify-content: flex-start;
+      overflow: hidden;
+      z-index: 10;
+    }
+    .nav::before {
+      content: "To do";
+      display: block;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      padding: 4px 12px 20px;
+    }
+    .nav-item {
+      flex-direction: row;
+      font-size: 14px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      gap: 10px;
+      width: 100%;
+      justify-content: flex-start;
+      color: var(--text-2);
+      transition: background 0.12s, color 0.12s;
+    }
+    .nav-item:hover { background: var(--surface-soft); color: var(--text); }
+    .nav-item.active { background: var(--surface); color: var(--text); font-weight: 600; }
+    .nav-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Main content area */
+    .header {
+      padding: 32px 32px 16px;
+    }
+    .content {
+      padding: 0 32px 40px;
+      overflow-y: auto;
+      height: calc(100vh - 90px);
+    }
+
+    /* Each tab fills remaining space */
+    .app > div:not(.nav) {
+      flex: 1;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    /* FAB repositioned for desktop */
+    .fab {
+      bottom: 32px;
+      right: 32px;
+      left: auto;
+      width: 48px;
+      height: 48px;
+      font-size: 22px;
+    }
+
+    /* Task cards wider, less cramped */
+    .task { border-radius: 12px; padding: 14px 18px; margin-bottom: 6px; }
+    .task:hover { background: color-mix(in srgb, var(--surface) 100%, var(--brand-a) 3%); border-color: var(--border-strong); }
+    .area-card { border-radius: 14px; padding: 18px; }
+    .project { padding: 16px 18px; }
+
+    /* Section titles more room */
+    .section-title { margin: 24px 0 12px; }
+
+    /* Sheets become centered modals on desktop */
+    .scrim { align-items: center; justify-content: center; }
+    .sheet {
+      border-radius: 18px;
+      max-width: 560px;
+      width: 90%;
+      max-height: 85vh;
+    }
+    .sheet-full {
+      border-radius: 18px;
+      max-width: 640px;
+      width: 90%;
+      height: auto;
+      max-height: 90vh;
+    }
+    @keyframes up { from { transform: scale(0.95) translateY(10px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+    .grab { display: none; }
+
+    /* Flow full screen -> centered card */
+    .flow {
+      height: auto;
+      min-height: 0;
+      padding: 28px 28px 28px;
+    }
+
+    /* Calendar grid wider */
+    .cal-grid { gap: 6px; }
+    .cal-day { font-size: 14px; border-radius: 10px; }
+
+    /* Grid layout for areas, contexts & projects */
+    .content:has(.area-card) {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+    .content:has(.area-card) .area-card { margin-bottom: 0; }
+    .content:has(.project) {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+      align-content: start;
+    }
+    .content:has(.project) .project { margin-bottom: 0; }
+
+    /* Header tweaks */
+    .header h1 { font-size: 32px; }
+    .header .greeting { font-size: 14px; }
+  }
+
+  /* ── Wide desktop (≥ 1200px) ── */
+  @media (min-width: 1200px) {
+    .nav { width: 240px; min-width: 240px; }
+    .content { padding: 0 40px 40px; }
+    .header { padding: 36px 40px 18px; }
+    .task { padding: 16px 20px; }
+    .areas-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  }
 </style>
 </head>
 <body>
