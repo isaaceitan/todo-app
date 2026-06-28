@@ -233,8 +233,13 @@
   .sync-badge.on { color: #34C77B; }
 
   /* ── Mobile polish ── */
-  .task { transition: transform 0.15s ease, opacity 0.15s ease; }
+  .task { transition: transform 0.15s ease, opacity 0.35s ease; }
   .task:active { transform: scale(0.985); }
+  /* fade-out al completar (linger) */
+  .task.leaving { opacity: 0; transform: translateY(-4px); pointer-events: none; }
+  /* "pop" satisfactorio al marcar el check */
+  @keyframes checkpop { 0% { transform: scale(1); } 45% { transform: scale(1.22); } 100% { transform: scale(1); } }
+  .checkbox.checked { animation: checkpop 0.28s ease; }
   .icon-btn { min-width: 44px; min-height: 44px; width: 44px; height: 44px; }
   .fab { transition: transform 0.15s ease, box-shadow 0.15s ease; }
   .fab:active { transform: scale(0.92); box-shadow: 0 4px 12px rgba(79,140,255,0.3); }
@@ -881,7 +886,8 @@ function TaskCard({
   onToggle,
   onOpen,
   showWaiting,
-  showWhen
+  showWhen,
+  leaving
 }) {
   const area = areas.find(a => a.id === task.areaId);
   const ctx = contexts.find(c => c.id === task.contextId);
@@ -892,7 +898,7 @@ function TaskCard({
     month: 'short'
   })) : null;
   return React.createElement("div", {
-    className: 'task' + (task.status === 'completed' ? ' done' : '') + (overdue ? ' overdue' : ''),
+    className: 'task' + (task.status === 'completed' ? ' done' : '') + (overdue ? ' overdue' : '') + (leaving ? ' leaving' : ''),
     onClick: onOpen
   }, React.createElement("div", {
     className: 'checkbox' + (task.status === 'completed' ? ' checked' : ''),
@@ -968,7 +974,9 @@ function TaskListPage({
   emptyTitle,
   emptyText,
   showWhen = true,
-  insights
+  insights,
+  onToggleTask,
+  leavingIds = []
 }) {
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "header"
@@ -995,21 +1003,26 @@ function TaskListPage({
     areas: data.areas,
     contexts: data.contexts,
     showWhen: showWhen,
-    onToggle: () => act.toggle(t.id),
+    leaving: leavingIds.includes(t.id),
+    onToggle: () => (onToggleTask || act.toggle)(t.id),
     onOpen: () => onOpen(t.id)
   }))));
 }
 function Pendientes({
   data,
   act,
-  onOpen
+  onOpen,
+  lingerIds = [],
+  leavingIds = [],
+  onToggleTask
 }) {
-  const pend = data.tasks.filter(t => t.status === 'active' && !t.isSomeday).sort((a, b) => {
+  const pend = data.tasks.filter(t => (t.status === 'active' || lingerIds.includes(t.id)) && !t.isSomeday).sort((a, b) => {
     if (!a.dueDate && !b.dueDate) return new Date(a.createdAt) - new Date(b.createdAt);
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
     return new Date(a.dueDate) - new Date(b.dueDate);
   });
+  const activePend = pend.filter(t => t.status === 'active').length;
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "header"
   }, React.createElement("div", {
@@ -1032,7 +1045,7 @@ function Pendientes({
     onClick: () => act.setOverlay('more')
   }, "⋯"))), React.createElement("div", {
     className: "stats"
-  }, pend.length, " pendientes")), React.createElement("div", {
+  }, activePend, " pendientes")), React.createElement("div", {
     className: "content"
   }, pend.length === 0 && React.createElement(Empty, {
     ico: "✓",
@@ -1044,7 +1057,8 @@ function Pendientes({
     areas: data.areas,
     contexts: data.contexts,
     showWhen: true,
-    onToggle: () => act.toggle(t.id),
+    leaving: leavingIds.includes(t.id),
+    onToggle: () => (onToggleTask || act.toggle)(t.id),
     onOpen: () => onOpen(t.id)
   }))));
 }
@@ -2374,6 +2388,8 @@ function App() {
   const [editingArea, setEditingArea] = useState(null);
   const [editingCtx, setEditingCtx] = useState(null);
   const [editingProject, setEditingProject] = useState(null);
+  const [lingerIds, setLingerIds] = useState([]);
+  const [leavingIds, setLeavingIds] = useState([]);
   useEffect(() => {
     loadData().then(setData);
   }, []);
@@ -2550,6 +2566,27 @@ function App() {
       return d;
     })
   };
+  const LINGER_MS = 1900,
+    EXIT_MS = 350;
+  const lingerToggle = id => {
+    const t = data && data.tasks.find(x => x.id === id);
+    if (!t) return;
+    if (t.status === 'active') {
+      act.toggle(id);
+      setLingerIds(a => [...new Set([...a, id])]);
+      setTimeout(() => {
+        setLeavingIds(a => [...a, id]);
+        setTimeout(() => {
+          setLingerIds(a => a.filter(x => x !== id));
+          setLeavingIds(a => a.filter(x => x !== id));
+        }, EXIT_MS);
+      }, LINGER_MS);
+    } else {
+      act.toggle(id);
+      setLingerIds(a => a.filter(x => x !== id));
+      setLeavingIds(a => a.filter(x => x !== id));
+    }
+  };
   if (!data) return React.createElement("div", {
     style: {
       padding: 40,
@@ -2567,23 +2604,25 @@ function App() {
   };
   const today = startOfDay(new Date());
   const inboxCount = data.inbox.filter(i => !i.processed).length;
-  const pendingTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday).sort(byDate);
-  const todayTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) <= today).sort(byDate);
-  const upcomingTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) > today).sort(byDate);
-  const waitingTasks = data.tasks.filter(t => t.status === 'active' && t.isWaitingFor).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  const somedayTasks = data.tasks.filter(t => t.status === 'active' && t.isSomeday).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const lingering = t => t.status === 'active' || lingerIds.includes(t.id);
+  const pendingTasks = data.tasks.filter(t => lingering(t) && !t.isSomeday).sort(byDate);
+  const todayTasks = data.tasks.filter(t => lingering(t) && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) <= today).sort(byDate);
+  const upcomingTasks = data.tasks.filter(t => lingering(t) && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) > today).sort(byDate);
+  const waitingTasks = data.tasks.filter(t => lingering(t) && t.isWaitingFor).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const somedayTasks = data.tasks.filter(t => lingering(t) && t.isSomeday).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const completedTasks = data.tasks.filter(t => t.status === 'completed').sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
   const activeProjects = data.projects.filter(p => p.status === 'active').length;
   const calendarCount = data.tasks.filter(t => t.status === 'active' && t.dueDate).length;
   const archiveCount = data.tasks.filter(t => t.status === 'deleted' || t.status === 'cancelled').length;
-  const noDateCount = pendingTasks.filter(t => !t.dueDate).length;
-  const overdueCount = todayTasks.filter(t => t.dueDate && startOfDay(t.dueDate) < today).length;
-  const quickWinsCount = pendingTasks.filter(t => t.isQuickWin).length;
+  const activeLen = list => list.filter(t => t.status === 'active').length;
+  const noDateCount = pendingTasks.filter(t => t.status === 'active' && !t.dueDate).length;
+  const overdueCount = todayTasks.filter(t => t.status === 'active' && t.dueDate && startOfDay(t.dueDate) < today).length;
+  const quickWinsCount = pendingTasks.filter(t => t.status === 'active' && t.isQuickWin).length;
   const primaryNavItems = [{
     key: 'pending',
     label: 'Pendientes',
     icon: 'pending',
-    count: pendingTasks.length
+    count: activeLen(pendingTasks)
   }, {
     key: 'areas',
     label: 'Áreas',
@@ -2627,12 +2666,12 @@ function App() {
       key: 'today',
       label: 'Hoy',
       icon: 'today',
-      count: todayTasks.length
+      count: activeLen(todayTasks)
     }, {
       key: 'upcoming',
       label: 'Próximas',
       icon: 'upcoming',
-      count: upcomingTasks.length
+      count: activeLen(upcomingTasks)
     }]
   }, {
     title: 'Revisar',
@@ -2645,12 +2684,12 @@ function App() {
       key: 'waiting',
       label: 'Esperando',
       icon: 'waiting',
-      count: waitingTasks.length
+      count: activeLen(waitingTasks)
     }, {
       key: 'someday',
       label: 'Algún día',
       icon: 'someday',
-      count: somedayTasks.length
+      count: activeLen(somedayTasks)
     }, {
       key: 'archive',
       label: 'Archivo',
@@ -2682,14 +2721,14 @@ function App() {
     value: quickWinsCount
   }, {
     label: 'Esperando',
-    value: waitingTasks.length
+    value: activeLen(waitingTasks)
   }, {
     label: 'Sin fecha',
     value: noDateCount
   }];
   const upcomingInsights = [{
     label: 'Próximas',
-    value: upcomingTasks.length
+    value: activeLen(upcomingTasks)
   }, {
     label: 'Calendario',
     value: calendarCount
@@ -2698,20 +2737,20 @@ function App() {
     value: activeProjects
   }, {
     label: 'Algún día',
-    value: somedayTasks.length
+    value: activeLen(somedayTasks)
   }];
   const pendingInsights = [{
     label: 'Activas',
-    value: pendingTasks.length
+    value: activeLen(pendingTasks)
   }, {
     label: 'Hoy',
-    value: todayTasks.length
+    value: activeLen(todayTasks)
   }, {
     label: 'Sin fecha',
     value: noDateCount
   }, {
     label: 'Esperando',
-    value: waitingTasks.length
+    value: activeLen(waitingTasks)
   }];
   return React.createElement("div", {
     className: "app"
@@ -2721,7 +2760,7 @@ function App() {
     className: "sidebar-brand"
   }, "To do"), React.createElement("div", {
     className: "sidebar-summary"
-  }, React.createElement("span", null, "Hoy"), React.createElement("strong", null, todayTasks.length), React.createElement("small", null, overdueCount, " vencidas · ", waitingTasks.length, " esperando")), React.createElement("div", {
+  }, React.createElement("span", null, "Hoy"), React.createElement("strong", null, activeLen(todayTasks)), React.createElement("small", null, overdueCount, " vencidas · ", activeLen(waitingTasks), " esperando")), React.createElement("div", {
     className: "sidebar-nav"
   }, navSections.map(section => React.createElement("div", {
     className: "sidebar-section",
@@ -2742,7 +2781,10 @@ function App() {
   }, tab === 'pending' && React.createElement(Pendientes, {
     data: data,
     act: act,
-    onOpen: openTask
+    onOpen: openTask,
+    lingerIds: lingerIds,
+    leavingIds: leavingIds,
+    onToggleTask: lingerToggle
   }), tab === 'inbox' && React.createElement(Inbox, {
     data: data,
     act: act,
@@ -2752,25 +2794,29 @@ function App() {
   }), tab === 'today' && React.createElement(TaskListPage, {
     title: "Hoy",
     greeting: "Enfoque del día",
-    stats: `${todayTasks.length} tareas para hoy o vencidas`,
+    stats: `${activeLen(todayTasks)} tareas para hoy o vencidas`,
     tasks: todayTasks,
     data: data,
     act: act,
     onOpen: openTask,
     onAdd: () => setAdding({}),
     insights: todayInsights,
+    onToggleTask: lingerToggle,
+    leavingIds: leavingIds,
     emptyTitle: "Nada para hoy",
     emptyText: "Agrega una tarea o revisa Upcoming para planear lo siguiente."
   }), tab === 'upcoming' && React.createElement(TaskListPage, {
     title: "Próximas",
     greeting: "Lo que viene",
-    stats: `${upcomingTasks.length} tareas programadas`,
+    stats: `${activeLen(upcomingTasks)} tareas programadas`,
     tasks: upcomingTasks,
     data: data,
     act: act,
     onOpen: openTask,
     onAdd: () => setAdding({}),
     insights: upcomingInsights,
+    onToggleTask: lingerToggle,
+    leavingIds: leavingIds,
     emptyTitle: "Sin próximas fechas",
     emptyText: "Las tareas futuras aparecerán aquí cuando tengan fecha."
   }), tab === 'completed' && React.createElement(TaskListPage, {
@@ -2786,23 +2832,27 @@ function App() {
   }), tab === 'waiting' && React.createElement(TaskListPage, {
     title: "Esperando",
     greeting: "Delegado o bloqueado",
-    stats: `${waitingTasks.length} tareas esperando respuesta`,
+    stats: `${activeLen(waitingTasks)} tareas esperando respuesta`,
     tasks: waitingTasks,
     data: data,
     act: act,
     onOpen: openTask,
     showWhen: false,
+    onToggleTask: lingerToggle,
+    leavingIds: leavingIds,
     emptyTitle: "Nada esperando",
     emptyText: "Las tareas marcadas como esperando aparecerán aquí."
   }), tab === 'someday' && React.createElement(TaskListPage, {
     title: "Algún día",
     greeting: "Ideas para revisar después",
-    stats: `${somedayTasks.length} tareas aparcadas`,
+    stats: `${activeLen(somedayTasks)} tareas aparcadas`,
     tasks: somedayTasks,
     data: data,
     act: act,
     onOpen: openTask,
     showWhen: false,
+    onToggleTask: lingerToggle,
+    leavingIds: leavingIds,
     emptyTitle: "Nada en algún día",
     emptyText: "Las ideas sin compromiso de fecha vivirán aquí."
   }), tab === 'settings' && React.createElement(SettingsPage, {
