@@ -95,10 +95,20 @@
   .project-header { display: flex; align-items: center; gap: 10px; }
   .project-title { font-size: 14px; font-weight: 600; }
   .project-meta { font-size: 11px; color: var(--text-2); margin-top: 2px; }
+  .project-outcome { margin-top: 10px; font-size: 12px; line-height: 1.45; color: var(--text-2); }
+  .project-progress { height: 6px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin-top: 12px; }
+  .project-progress div { height: 100%; border-radius: inherit; }
+  .project-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; font-size: 10.5px; color: var(--text-2); }
+  .project-stats span { padding: 3px 7px; border-radius: 999px; background: var(--surface-soft); }
   .project-next { margin-top: 8px; padding: 8px 10px; background: var(--surface-soft); border-radius: 8px;
     font-size: 11.5px; color: var(--text-2); border-left: 2px solid var(--brand-a); }
   .project-next strong { color: var(--text); }
   .ring { width: 30px; height: 30px; flex-shrink: 0; }
+
+  .insight-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 0 20px 14px; }
+  .insight-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+  .insight-value { font-size: 20px; font-weight: 750; line-height: 1; }
+  .insight-label { font-size: 10.5px; color: var(--text-2); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
   /* Bottom nav */
   .nav { position: fixed; bottom: 0; left: 0; right: 0; max-width: 480px; margin: 0 auto;
@@ -109,6 +119,9 @@
     font-size: 9.5px; color: var(--text-3); cursor: pointer; padding: 4px 0; }
   .nav-item.active { color: var(--text); }
   .nav-item svg { width: 22px; height: 22px; }
+  .menu-option svg { width: 18px; height: 18px; color: var(--text-2); }
+  .menu-option span { flex: 1; }
+  .menu-count { flex: 0 0 auto !important; color: var(--text-3); font-size: 12px; }
 
   .fab { position: fixed; bottom: calc(78px + env(safe-area-inset-bottom)); right: max(20px, calc(50% - 240px + 20px));
     width: 56px; height: 56px; border-radius: 50%; background: var(--grad); color: #fff;
@@ -226,19 +239,25 @@
   /* ── Desktop / productivity layout ── */
   @media (min-width: 768px) {
     :root {
-      --bg: #F6F7F9;
+      --bg: #F4F5F7;
       --bg-2: #FFFFFF;
       --surface: #FFFFFF;
-      --surface-soft: rgba(18,24,38,0.045);
-      --border: rgba(18,24,38,0.08);
+      --surface-soft: rgba(20,27,38,0.055);
+      --border: rgba(20,27,38,0.09);
       --border-strong: rgba(18,24,38,0.14);
       --text: #171923;
       --text-2: #667085;
       --text-3: #98A2B3;
+      --desktop-shadow: 0 18px 50px rgba(16,24,40,0.08);
     }
 
     html, body { overflow-x: hidden; }
-    body { background: var(--bg); background-image: none; }
+    body {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0) 260px),
+        radial-gradient(circle at 34% -10%, rgba(79,140,255,0.12), transparent 30%),
+        var(--bg);
+    }
     #root { max-width: none; margin: 0; min-height: 100%; }
 
     .app {
@@ -258,21 +277,43 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
-      padding: 24px 16px;
-      background: color-mix(in srgb, var(--bg-2) 92%, var(--bg));
+      padding: 22px 14px;
+      background: rgba(255,255,255,0.82);
       border-right: 1px solid var(--border);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
     }
     .sidebar-brand {
-      padding: 0 10px 20px;
+      padding: 0 10px 14px;
       font-size: 18px;
       font-weight: 750;
       letter-spacing: 0;
       color: var(--text);
     }
-    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-summary {
+      margin: 0 2px 18px;
+      padding: 14px;
+      border-radius: 14px;
+      color: #fff;
+      background: linear-gradient(135deg, #141923, #315BFF 105%);
+      box-shadow: 0 16px 28px rgba(49,91,255,0.18);
+    }
+    .sidebar-summary span { display: block; font-size: 12px; color: rgba(255,255,255,0.7); }
+    .sidebar-summary strong { display: block; font-size: 34px; line-height: 1; margin-top: 6px; }
+    .sidebar-summary small { display: block; margin-top: 8px; color: rgba(255,255,255,0.72); font-size: 11px; }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding-right: 2px; }
+    .sidebar-section { display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-section-title {
+      padding: 0 10px 3px;
+      color: var(--text-3);
+      font-size: 10px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
     .sidebar-item {
       width: 100%;
-      height: 40px;
+      min-height: 36px;
       display: flex;
       align-items: center;
       gap: 10px;
@@ -291,7 +332,7 @@
       background: var(--surface);
       color: var(--text);
       border-color: var(--border);
-      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+      box-shadow: 0 8px 22px rgba(16,24,40,0.06);
     }
     .sidebar-item svg { width: 18px; height: 18px; flex-shrink: 0; }
     .sidebar-item span { flex: 1; }
@@ -323,11 +364,11 @@
 
     .header,
     .content {
-      width: min(100%, 920px);
-      max-width: 920px;
+      width: min(100%, 1040px);
+      max-width: 1040px;
     }
     .header {
-      padding: 54px 44px 18px;
+      padding: 58px 48px 18px;
     }
     .header .greeting {
       font-size: 12px;
@@ -338,7 +379,7 @@
     }
     .header h1 {
       font-size: 34px;
-      font-weight: 760;
+      font-weight: 800;
       letter-spacing: 0;
       line-height: 1.12;
     }
@@ -363,7 +404,7 @@
       min-height: 38px;
       padding: 0 14px;
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       background: var(--text);
       color: var(--bg-2);
       font: inherit;
@@ -375,17 +416,38 @@
 
     .content {
       flex: 0 0 auto;
-      padding: 0 44px 88px;
+      padding: 0 48px 88px;
       overflow: visible;
     }
     .task-list-content {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 6px;
+      border-radius: 16px;
+      padding: 8px;
       min-height: 190px;
+      box-shadow: var(--desktop-shadow);
+    }
+    .insight-grid {
+      width: min(100%, 1040px);
+      max-width: 1040px;
+      padding: 0 48px 16px;
+      gap: 12px;
+    }
+    .insight-card {
+      border-radius: 16px;
+      padding: 16px;
       box-shadow: 0 1px 2px rgba(16,24,40,0.04);
     }
+    .insight-value { font-size: 28px; }
+    .insight-label { font-size: 12px; }
+    .insight-card:first-child {
+      color: #fff;
+      background: linear-gradient(135deg, #171923, #315BFF);
+      border-color: transparent;
+    }
+    .insight-card:first-child .insight-label { color: rgba(255,255,255,0.75); }
+    .insight-card:nth-child(2) { border-color: rgba(52,199,123,0.22); }
+    .insight-card:nth-child(3) { border-color: rgba(255,181,71,0.26); }
     .task {
       background: transparent;
       border: 1px solid transparent;
@@ -433,24 +495,24 @@
     .area-card,
     .project,
     .settings-card {
-      border-radius: 12px;
+      border-radius: 16px;
       background: var(--surface);
       box-shadow: 0 1px 2px rgba(16,24,40,0.04);
       transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
     }
     .area-card,
-    .project { padding: 18px; }
+    .project { padding: 20px; }
     .area-card:hover,
     .project:hover {
       border-color: var(--border-strong);
-      box-shadow: 0 10px 24px rgba(16,24,40,0.07);
+      box-shadow: var(--desktop-shadow);
       transform: translateY(-1px);
     }
     .content:has(.area-card),
     .content:has(.project) {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
       align-content: start;
     }
     .content:has(.area-card) .section-title,
@@ -463,6 +525,13 @@
     .settings-page { max-width: 680px; align-self: center; }
     .settings-card { padding: 22px 24px; border: 1px solid var(--border); }
     .settings-card h2 { font-size: 18px; margin-bottom: 10px; }
+    .project-header { align-items: flex-start; }
+    .project-title { font-size: 15.5px; line-height: 1.25; }
+    .project-meta { font-size: 12px; margin-top: 4px; }
+    .project-outcome { font-size: 12.5px; margin-top: 14px; min-height: 34px; }
+    .project-progress { height: 7px; margin-top: 16px; }
+    .project-stats { font-size: 11px; gap: 7px; }
+    .project-next { margin-top: 14px; padding: 10px 11px; font-size: 12px; }
 
     .section-title {
       font-size: 11px;
@@ -637,12 +706,17 @@ const Icon = ({
     pending: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
     today: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
     inbox: 'M3 13h4l2 3h6l2-3h4M3 13l3-8h12l3 8M3 13v6h18v-6',
+    search: 'M11 19a8 8 0 118-8 8 8 0 01-8 8zM21 21l-4.35-4.35',
     upcoming: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
     areas: 'M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z',
     contexts: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
     projects: 'M3 5h18M3 12h18M3 19h18',
     calendar: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
     completed: 'M20 6L9 17l-5-5',
+    archive: 'M4 7h16M6 7v13h12V7M9 11h6M8 3h8l1 4H7l1-4z',
+    waiting: 'M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    someday: 'M21 12.8A8.5 8.5 0 1111.2 3a6.5 6.5 0 009.8 9.8z',
+    more: 'M5 12h.01M12 12h.01M19 12h.01',
     settings: 'M12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5zM19.4 15a1.7 1.7 0 00.34 1.88l.04.04a2 2 0 01-2.83 2.83l-.04-.04A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6l-.03.04a2 2 0 01-3.46-2l.02-.05A1.7 1.7 0 009.4 15a1.7 1.7 0 00-1.88-.34l-.05.02a2 2 0 01-2-3.46l.04-.03A1.7 1.7 0 006.6 9a1.7 1.7 0 00-.6-1l-.04-.03a2 2 0 012.83-2.83l.04.04A1.7 1.7 0 0010 4.6a1.7 1.7 0 001-.6l.03-.04a2 2 0 013.46 2l-.02.05A1.7 1.7 0 0014.6 9a1.7 1.7 0 001.88.34l.05-.02a2 2 0 012 3.46l-.04.03A1.7 1.7 0 0019.4 15z'
   }[name];
   return React.createElement("svg", {
@@ -804,6 +878,21 @@ function Empty({
     className: "ico"
   }, ico), React.createElement("h3", null, title), React.createElement("p", null, text));
 }
+function InsightGrid({
+  cards
+}) {
+  if (!cards || cards.length === 0) return null;
+  return React.createElement("div", {
+    className: "insight-grid"
+  }, cards.map(c => React.createElement("div", {
+    className: "insight-card",
+    key: c.label
+  }, React.createElement("div", {
+    className: "insight-value"
+  }, c.value), React.createElement("div", {
+    className: "insight-label"
+  }, c.label))));
+}
 function TaskListPage({
   title,
   greeting,
@@ -815,7 +904,8 @@ function TaskListPage({
   onAdd,
   emptyTitle,
   emptyText,
-  showWhen = true
+  showWhen = true,
+  insights
 }) {
   return React.createElement(React.Fragment, null, React.createElement("div", {
     className: "header"
@@ -828,7 +918,9 @@ function TaskListPage({
     onClick: onAdd
   }, "+ Tarea")), React.createElement("div", {
     className: "stats"
-  }, stats)), React.createElement("div", {
+  }, stats)), React.createElement(InsightGrid, {
+    cards: insights
+  }), React.createElement("div", {
     className: "content task-list-content"
   }, tasks.length === 0 && React.createElement(Empty, {
     ico: "✓",
@@ -1101,11 +1193,13 @@ function Projects({
   const stats = p => {
     const ts = data.tasks.filter(t => t.projectId === p.id && t.status !== 'deleted' && t.status !== 'cancelled');
     const done = ts.filter(t => t.status === 'completed').length;
-    const next = ts.filter(t => t.status === 'active').sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+    const active = ts.filter(t => t.status === 'active');
+    const next = active.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
     return {
       total: ts.length,
       done,
       progress: ts.length ? done / ts.length : 0,
+      active: active.length,
       next: next ? next.nextAction || next.title : null
     };
   };
@@ -1151,7 +1245,7 @@ function Projects({
       className: "project-title"
     }, p.name), React.createElement("div", {
       className: "project-meta"
-    }, s.done, " de ", s.total, " tareas · ", area?.name || 'Sin área')), React.createElement("button", {
+    }, area?.name || 'Sin área')), React.createElement("button", {
       className: "icon-btn",
       style: {
         fontSize: 15
@@ -1160,7 +1254,18 @@ function Projects({
         e.stopPropagation();
         onEditProject(p);
       }
-    }, "✎")), s.next && React.createElement("div", {
+    }, "✎")), p.outcome && React.createElement("div", {
+      className: "project-outcome"
+    }, p.outcome), React.createElement("div", {
+      className: "project-progress"
+    }, React.createElement("div", {
+      style: {
+        width: `${Math.round(s.progress * 100)}%`,
+        background: color
+      }
+    })), React.createElement("div", {
+      className: "project-stats"
+    }, React.createElement("span", null, Math.round(s.progress * 100), "%"), React.createElement("span", null, s.active, " abiertas"), React.createElement("span", null, s.done, " de ", s.total)), s.next && React.createElement("div", {
       className: "project-next",
       style: {
         borderLeftColor: color
@@ -1709,10 +1814,40 @@ function ListSheet({
   })))));
 }
 function MoreMenu({
+  items,
   onPick,
   onClose
 }) {
-  const items = [['waiting', '⧖  Esperando'], ['someday', '☾  Algún día / Tal vez'], ['archive', '🗄  Archivo'], ['settings', '⚙  Ajustes']];
+  const fallback = [{
+    key: 'waiting',
+    label: 'Esperando',
+    icon: 'waiting'
+  }, {
+    key: 'someday',
+    label: 'Algún día',
+    icon: 'someday'
+  }, {
+    key: 'completed',
+    label: 'Completadas',
+    icon: 'completed'
+  }, {
+    key: 'settings',
+    label: 'Ajustes',
+    icon: 'settings'
+  }];
+  const rows = items || fallback;
+  const rowNodes = rows.map(item => React.createElement("div", {
+    key: item.key,
+    className: "option menu-option",
+    style: {
+      marginBottom: 8
+    },
+    onClick: () => onPick(item.key)
+  }, React.createElement(Icon, {
+    name: item.icon || item.key
+  }), React.createElement("span", null, item.label), item.count !== undefined && React.createElement("span", {
+    className: "menu-count"
+  }, item.count)));
   return React.createElement("div", {
     className: "scrim",
     onClick: onClose
@@ -1723,14 +1858,7 @@ function MoreMenu({
     className: "grab"
   }), React.createElement("div", {
     className: "form"
-  }, React.createElement("h2", null, "Más"), items.map(([k, l]) => React.createElement("div", {
-    key: k,
-    className: "option",
-    style: {
-      marginBottom: 8
-    },
-    onClick: () => onPick(k)
-  }, l)))));
+  }, React.createElement("h2", null, "Más"), rowNodes)));
 }
 function ContextsSheet({
   data,
@@ -2373,12 +2501,175 @@ function App() {
   };
   const today = startOfDay(new Date());
   const inboxCount = data.inbox.filter(i => !i.processed).length;
+  const pendingTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday).sort(byDate);
   const todayTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) <= today).sort(byDate);
   const upcomingTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) > today).sort(byDate);
+  const waitingTasks = data.tasks.filter(t => t.status === 'active' && t.isWaitingFor).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const somedayTasks = data.tasks.filter(t => t.status === 'active' && t.isSomeday).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
   const completedTasks = data.tasks.filter(t => t.status === 'completed').sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
   const activeProjects = data.projects.filter(p => p.status === 'active').length;
-  const mobileNavItems = [['pending', 'Pendientes'], ['areas', 'Áreas'], ['contexts', 'Contextos'], ['projects', 'Proyectos'], ['calendar', 'Calendario']];
-  const desktopNavItems = [['inbox', 'Inbox', inboxCount], ['today', 'Today', todayTasks.length], ['upcoming', 'Upcoming', upcomingTasks.length], ['projects', 'Projects', activeProjects], ['completed', 'Completed', completedTasks.length], ['settings', 'Settings', null]];
+  const calendarCount = data.tasks.filter(t => t.status === 'active' && t.dueDate).length;
+  const archiveCount = data.tasks.filter(t => t.status === 'deleted' || t.status === 'cancelled').length;
+  const noDateCount = pendingTasks.filter(t => !t.dueDate).length;
+  const overdueCount = todayTasks.filter(t => t.dueDate && startOfDay(t.dueDate) < today).length;
+  const quickWinsCount = pendingTasks.filter(t => t.isQuickWin).length;
+  const navSections = [{
+    title: 'Captura',
+    items: [{
+      key: 'inbox',
+      label: 'Inbox',
+      icon: 'inbox',
+      count: inboxCount
+    }, {
+      key: 'search',
+      label: 'Buscar',
+      icon: 'search',
+      overlay: 'search'
+    }, {
+      key: 'pending',
+      label: 'Todo',
+      icon: 'pending',
+      count: pendingTasks.length
+    }]
+  }, {
+    title: 'Plan',
+    items: [{
+      key: 'today',
+      label: 'Hoy',
+      icon: 'today',
+      count: todayTasks.length
+    }, {
+      key: 'upcoming',
+      label: 'Próximas',
+      icon: 'upcoming',
+      count: upcomingTasks.length
+    }, {
+      key: 'calendar',
+      label: 'Calendario',
+      icon: 'calendar',
+      count: calendarCount
+    }]
+  }, {
+    title: 'Organizar',
+    items: [{
+      key: 'projects',
+      label: 'Proyectos',
+      icon: 'projects',
+      count: activeProjects
+    }, {
+      key: 'areas',
+      label: 'Áreas',
+      icon: 'areas',
+      count: data.areas.length
+    }, {
+      key: 'contexts',
+      label: 'Contextos',
+      icon: 'contexts',
+      count: data.contexts.length
+    }]
+  }, {
+    title: 'Revisar',
+    items: [{
+      key: 'completed',
+      label: 'Completadas',
+      icon: 'completed',
+      count: completedTasks.length
+    }, {
+      key: 'waiting',
+      label: 'Esperando',
+      icon: 'waiting',
+      count: waitingTasks.length
+    }, {
+      key: 'someday',
+      label: 'Algún día',
+      icon: 'someday',
+      count: somedayTasks.length
+    }, {
+      key: 'archive',
+      label: 'Archivo',
+      icon: 'archive',
+      count: archiveCount,
+      overlay: 'archive'
+    }, {
+      key: 'settings',
+      label: 'Ajustes',
+      icon: 'settings'
+    }]
+  }];
+  const allNavItems = navSections.flatMap(s => s.items);
+  const mobileNavItems = [{
+    key: 'inbox',
+    label: 'Inbox',
+    icon: 'inbox',
+    count: inboxCount
+  }, {
+    key: 'today',
+    label: 'Hoy',
+    icon: 'today',
+    count: todayTasks.length
+  }, {
+    key: 'upcoming',
+    label: 'Próximas',
+    icon: 'upcoming',
+    count: upcomingTasks.length
+  }, {
+    key: 'projects',
+    label: 'Proyectos',
+    icon: 'projects',
+    count: activeProjects
+  }, {
+    key: 'more',
+    label: 'Más',
+    icon: 'more'
+  }];
+  const mobileMoreItems = allNavItems.filter(item => !mobileNavItems.some(m => m.key === item.key));
+  const moreActive = mobileMoreItems.some(item => item.key === tab);
+  const pickMenuItem = key => {
+    const item = allNavItems.find(x => x.key === key);
+    if (item?.overlay) setOverlay(item.overlay);else {
+      setTab(key);
+      setOverlay(null);
+    }
+  };
+  const todayInsights = [{
+    label: 'Vencidas',
+    value: overdueCount
+  }, {
+    label: 'Quick wins',
+    value: quickWinsCount
+  }, {
+    label: 'Esperando',
+    value: waitingTasks.length
+  }, {
+    label: 'Sin fecha',
+    value: noDateCount
+  }];
+  const upcomingInsights = [{
+    label: 'Próximas',
+    value: upcomingTasks.length
+  }, {
+    label: 'Calendario',
+    value: calendarCount
+  }, {
+    label: 'Proyectos',
+    value: activeProjects
+  }, {
+    label: 'Algún día',
+    value: somedayTasks.length
+  }];
+  const pendingInsights = [{
+    label: 'Activas',
+    value: pendingTasks.length
+  }, {
+    label: 'Hoy',
+    value: todayTasks.length
+  }, {
+    label: 'Sin fecha',
+    value: noDateCount
+  }, {
+    label: 'Esperando',
+    value: waitingTasks.length
+  }];
   return React.createElement("div", {
     className: "app"
   }, React.createElement("aside", {
@@ -2386,23 +2677,26 @@ function App() {
   }, React.createElement("div", {
     className: "sidebar-brand"
   }, "To do"), React.createElement("div", {
+    className: "sidebar-summary"
+  }, React.createElement("span", null, "Hoy"), React.createElement("strong", null, todayTasks.length), React.createElement("small", null, overdueCount, " vencidas · ", waitingTasks.length, " esperando")), React.createElement("div", {
     className: "sidebar-nav"
-  }, desktopNavItems.map(([k, l, count]) => React.createElement("button", {
-    key: k,
-    className: 'sidebar-item' + (tab === k ? ' active' : ''),
-    onClick: () => setTab(k)
+  }, navSections.map(section => React.createElement("div", {
+    className: "sidebar-section",
+    key: section.title
+  }, React.createElement("div", {
+    className: "sidebar-section-title"
+  }, section.title), section.items.map(item => React.createElement("button", {
+    key: item.key,
+    className: 'sidebar-item' + (tab === item.key ? ' active' : ''),
+    onClick: () => item.overlay ? setOverlay(item.overlay) : setTab(item.key)
   }, React.createElement(Icon, {
-    name: k
-  }), React.createElement("span", null, l), count !== null && React.createElement("strong", null, count)))), React.createElement("button", {
+    name: item.icon
+  }), React.createElement("span", null, item.label), item.count !== undefined && React.createElement("strong", null, item.count)))))), React.createElement("button", {
     className: "sidebar-add",
     onClick: () => setAdding({})
   }, "+ Nueva tarea")), React.createElement("main", {
     className: "main-view"
-  }, tab === 'pending' && React.createElement(Pendientes, {
-    data: data,
-    act: act,
-    onOpen: openTask
-  }), tab === 'inbox' && React.createElement(Inbox, {
+  }, tab === 'inbox' && React.createElement(Inbox, {
     data: data,
     act: act,
     onProcess: item => {
@@ -2417,6 +2711,7 @@ function App() {
     act: act,
     onOpen: openTask,
     onAdd: () => setAdding({}),
+    insights: todayInsights,
     emptyTitle: "Nada para hoy",
     emptyText: "Agrega una tarea o revisa Upcoming para planear lo siguiente."
   }), tab === 'upcoming' && React.createElement(TaskListPage, {
@@ -2428,8 +2723,21 @@ function App() {
     act: act,
     onOpen: openTask,
     onAdd: () => setAdding({}),
+    insights: upcomingInsights,
     emptyTitle: "Sin próximas fechas",
     emptyText: "Las tareas futuras aparecerán aquí cuando tengan fecha."
+  }), tab === 'pending' && React.createElement(TaskListPage, {
+    title: "Todo",
+    greeting: "Todas las tareas activas",
+    stats: `${pendingTasks.length} tareas abiertas`,
+    tasks: pendingTasks,
+    data: data,
+    act: act,
+    onOpen: openTask,
+    onAdd: () => setAdding({}),
+    insights: pendingInsights,
+    emptyTitle: "Todo al día",
+    emptyText: "No tienes pendientes. Toca + para capturar algo."
   }), tab === 'completed' && React.createElement(TaskListPage, {
     title: "Completed",
     greeting: "Trabajo terminado",
@@ -2440,6 +2748,28 @@ function App() {
     onOpen: openTask,
     emptyTitle: "Aún no hay completadas",
     emptyText: "Cuando cierres tareas, quedarán aquí para consulta rápida."
+  }), tab === 'waiting' && React.createElement(TaskListPage, {
+    title: "Esperando",
+    greeting: "Delegado o bloqueado",
+    stats: `${waitingTasks.length} tareas esperando respuesta`,
+    tasks: waitingTasks,
+    data: data,
+    act: act,
+    onOpen: openTask,
+    showWhen: false,
+    emptyTitle: "Nada esperando",
+    emptyText: "Las tareas marcadas como esperando aparecerán aquí."
+  }), tab === 'someday' && React.createElement(TaskListPage, {
+    title: "Algún día",
+    greeting: "Ideas para revisar después",
+    stats: `${somedayTasks.length} tareas aparcadas`,
+    tasks: somedayTasks,
+    data: data,
+    act: act,
+    onOpen: openTask,
+    showWhen: false,
+    emptyTitle: "Nada en algún día",
+    emptyText: "Las ideas sin compromiso de fecha vivirán aquí."
   }), tab === 'settings' && React.createElement(SettingsPage, {
     data: data,
     act: act
@@ -2462,18 +2792,18 @@ function App() {
     data: data,
     act: act,
     onOpen: openTask
-  })), (tab === 'pending' || tab === 'today' || tab === 'upcoming') && React.createElement("button", {
+  })), ['pending', 'today', 'upcoming', 'inbox'].includes(tab) && React.createElement("button", {
     className: "fab",
     onClick: () => setAdding({})
   }, "+"), React.createElement("div", {
     className: "nav"
-  }, mobileNavItems.map(([k, l]) => React.createElement("div", {
-    key: k,
-    className: 'nav-item' + (tab === k ? ' active' : ''),
-    onClick: () => setTab(k)
+  }, mobileNavItems.map(item => React.createElement("div", {
+    key: item.key,
+    className: 'nav-item' + (tab === item.key || item.key === 'more' && moreActive ? ' active' : ''),
+    onClick: () => item.key === 'more' ? setOverlay('more') : setTab(item.key)
   }, React.createElement(Icon, {
-    name: k
-  }), React.createElement("span", null, l)))), adding && React.createElement(AddFlow, {
+    name: item.icon
+  }), React.createElement("span", null, item.label)))), adding && React.createElement(AddFlow, {
     data: data,
     act: act,
     initialText: adding.initialText,
@@ -2509,8 +2839,9 @@ function App() {
       setProcessing(item);
     }
   }))), overlay === 'more' && React.createElement(MoreMenu, {
+    items: mobileMoreItems,
     onClose: () => setOverlay(null),
-    onPick: k => setOverlay(k)
+    onPick: pickMenuItem
   }), overlay === 'search' && React.createElement(SearchSheet, {
     data: data,
     act: act,

@@ -103,12 +103,17 @@ const Icon = ({ name }) => {
     pending: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
     today: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
     inbox: 'M3 13h4l2 3h6l2-3h4M3 13l3-8h12l3 8M3 13v6h18v-6',
+    search: 'M11 19a8 8 0 118-8 8 8 0 01-8 8zM21 21l-4.35-4.35',
     upcoming: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
     areas: 'M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z',
     contexts: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
     projects: 'M3 5h18M3 12h18M3 19h18',
     calendar: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
     completed: 'M20 6L9 17l-5-5',
+    archive: 'M4 7h16M6 7v13h12V7M9 11h6M8 3h8l1 4H7l1-4z',
+    waiting: 'M12 6v6l4 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+    someday: 'M21 12.8A8.5 8.5 0 1111.2 3a6.5 6.5 0 009.8 9.8z',
+    more: 'M5 12h.01M12 12h.01M19 12h.01',
     settings: 'M12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5zM19.4 15a1.7 1.7 0 00.34 1.88l.04.04a2 2 0 01-2.83 2.83l-.04-.04A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6l-.03.04a2 2 0 01-3.46-2l.02-.05A1.7 1.7 0 009.4 15a1.7 1.7 0 00-1.88-.34l-.05.02a2 2 0 01-2-3.46l.04-.03A1.7 1.7 0 006.6 9a1.7 1.7 0 00-.6-1l-.04-.03a2 2 0 012.83-2.83l.04.04A1.7 1.7 0 0010 4.6a1.7 1.7 0 001-.6l.03-.04a2 2 0 013.46 2l-.02.05A1.7 1.7 0 0014.6 9a1.7 1.7 0 001.88.34l.05-.02a2 2 0 012 3.46l-.04.03A1.7 1.7 0 0019.4 15z',
   }[name];
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={p}/></svg>;
@@ -178,7 +183,21 @@ function TaskCard({ task, areas, contexts, onToggle, onOpen, showWaiting, showWh
   );
 }
 
-function TaskListPage({ title, greeting, stats, tasks, data, act, onOpen, onAdd, emptyTitle, emptyText, showWhen=true }) {
+function InsightGrid({ cards }) {
+  if (!cards || cards.length===0) return null;
+  return (
+    <div className="insight-grid">
+      {cards.map(c => (
+        <div className="insight-card" key={c.label}>
+          <div className="insight-value">{c.value}</div>
+          <div className="insight-label">{c.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TaskListPage({ title, greeting, stats, tasks, data, act, onOpen, onAdd, emptyTitle, emptyText, showWhen=true, insights }) {
   return (
     <>
       <div className="header">
@@ -189,6 +208,7 @@ function TaskListPage({ title, greeting, stats, tasks, data, act, onOpen, onAdd,
         </div>
         <div className="stats">{stats}</div>
       </div>
+      <InsightGrid cards={insights} />
       <div className="content task-list-content">
         {tasks.length===0 && <Empty ico="✓" title={emptyTitle} text={emptyText} />}
         {tasks.map(t => <TaskCard key={t.id} task={t} areas={data.areas} contexts={data.contexts}
@@ -347,9 +367,10 @@ function Projects({ data, onOpenProject, onEditProject, onAddProject }) {
   const stats = (p) => {
     const ts = data.tasks.filter(t => t.projectId===p.id && t.status!=='deleted' && t.status!=='cancelled');
     const done = ts.filter(t => t.status==='completed').length;
-    const next = ts.filter(t => t.status==='active').sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt))[0];
+    const active = ts.filter(t => t.status==='active');
+    const next = active.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt))[0];
     return { total: ts.length, done, progress: ts.length? done/ts.length : 0,
-      next: next ? (next.nextAction || next.title) : null };
+      active: active.length, next: next ? (next.nextAction || next.title) : null };
   };
   return (
     <>
@@ -372,9 +393,18 @@ function Projects({ data, onOpenProject, onEditProject, onAddProject }) {
                 <Ring progress={s.progress} color={color} />
                 <div style={{flex:1}}>
                   <div className="project-title">{p.name}</div>
-                  <div className="project-meta">{s.done} de {s.total} tareas · {area?.name || 'Sin área'}</div>
+                  <div className="project-meta">{area?.name || 'Sin área'}</div>
                 </div>
                 <button className="icon-btn" style={{fontSize:15}} onClick={e=>{e.stopPropagation();onEditProject(p);}}>✎</button>
+              </div>
+              {p.outcome && <div className="project-outcome">{p.outcome}</div>}
+              <div className="project-progress">
+                <div style={{width:`${Math.round(s.progress*100)}%`,background:color}} />
+              </div>
+              <div className="project-stats">
+                <span>{Math.round(s.progress*100)}%</span>
+                <span>{s.active} abiertas</span>
+                <span>{s.done} de {s.total}</span>
               </div>
               {s.next && <div className="project-next" style={{borderLeftColor:color}}><strong>Siguiente: </strong>{s.next}</div>}
             </div>
@@ -617,16 +647,26 @@ function ListSheet({ title, tasks, data, act, onOpen, onClose, showWaiting }) {
   );
 }
 
-function MoreMenu({ onPick, onClose }) {
-  const items = [['waiting','⧖  Esperando'],['someday','☾  Algún día / Tal vez'],['archive','🗄  Archivo'],['settings','⚙  Ajustes']];
+function MoreMenu({ items, onPick, onClose }) {
+  const fallback = [
+    { key:'waiting', label:'Esperando', icon:'waiting' },
+    { key:'someday', label:'Algún día', icon:'someday' },
+    { key:'completed', label:'Completadas', icon:'completed' },
+    { key:'settings', label:'Ajustes', icon:'settings' },
+  ];
+  const rows = items || fallback;
   return (
     <div className="scrim" onClick={onClose}>
       <div className="sheet" onClick={e=>e.stopPropagation()}>
         <div className="grab"/>
         <div className="form">
           <h2>Más</h2>
-          {items.map(([k,l])=>(
-            <div key={k} className="option" style={{marginBottom:8}} onClick={()=>onPick(k)}>{l}</div>
+          {rows.map(item=>(
+            <div key={item.key} className="option menu-option" style={{marginBottom:8}} onClick={()=>onPick(item.key)}>
+              <Icon name={item.icon || item.key} />
+              <span>{item.label}</span>
+              {item.count!==undefined && <span className="menu-count">{item.count}</span>}
+            </div>
           ))}
         </div>
       </div>
@@ -914,58 +954,141 @@ function App() {
   };
   const today = startOfDay(new Date());
   const inboxCount = data.inbox.filter(i=>!i.processed).length;
+  const pendingTasks = data.tasks
+    .filter(t=>t.status==='active' && !t.isSomeday)
+    .sort(byDate);
   const todayTasks = data.tasks
     .filter(t=>t.status==='active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) <= today)
     .sort(byDate);
   const upcomingTasks = data.tasks
     .filter(t=>t.status==='active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) > today)
     .sort(byDate);
+  const waitingTasks = data.tasks
+    .filter(t=>t.status==='active' && t.isWaitingFor)
+    .sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  const somedayTasks = data.tasks
+    .filter(t=>t.status==='active' && t.isSomeday)
+    .sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
   const completedTasks = data.tasks
     .filter(t=>t.status==='completed')
     .sort((a,b)=>new Date(b.completedAt||b.createdAt)-new Date(a.completedAt||a.createdAt));
   const activeProjects = data.projects.filter(p=>p.status==='active').length;
+  const calendarCount = data.tasks.filter(t=>t.status==='active' && t.dueDate).length;
+  const archiveCount = data.tasks.filter(t=>t.status==='deleted' || t.status==='cancelled').length;
+  const noDateCount = pendingTasks.filter(t=>!t.dueDate).length;
+  const overdueCount = todayTasks.filter(t=>t.dueDate && startOfDay(t.dueDate) < today).length;
+  const quickWinsCount = pendingTasks.filter(t=>t.isQuickWin).length;
 
-  const mobileNavItems = [['pending','Pendientes'],['areas','Áreas'],['contexts','Contextos'],['projects','Proyectos'],['calendar','Calendario']];
-  const desktopNavItems = [
-    ['inbox','Inbox',inboxCount],
-    ['today','Today',todayTasks.length],
-    ['upcoming','Upcoming',upcomingTasks.length],
-    ['projects','Projects',activeProjects],
-    ['completed','Completed',completedTasks.length],
-    ['settings','Settings',null],
+  const navSections = [
+    { title:'Captura', items:[
+      { key:'inbox', label:'Inbox', icon:'inbox', count:inboxCount },
+      { key:'search', label:'Buscar', icon:'search', overlay:'search' },
+      { key:'pending', label:'Todo', icon:'pending', count:pendingTasks.length },
+    ]},
+    { title:'Plan', items:[
+      { key:'today', label:'Hoy', icon:'today', count:todayTasks.length },
+      { key:'upcoming', label:'Próximas', icon:'upcoming', count:upcomingTasks.length },
+      { key:'calendar', label:'Calendario', icon:'calendar', count:calendarCount },
+    ]},
+    { title:'Organizar', items:[
+      { key:'projects', label:'Proyectos', icon:'projects', count:activeProjects },
+      { key:'areas', label:'Áreas', icon:'areas', count:data.areas.length },
+      { key:'contexts', label:'Contextos', icon:'contexts', count:data.contexts.length },
+    ]},
+    { title:'Revisar', items:[
+      { key:'completed', label:'Completadas', icon:'completed', count:completedTasks.length },
+      { key:'waiting', label:'Esperando', icon:'waiting', count:waitingTasks.length },
+      { key:'someday', label:'Algún día', icon:'someday', count:somedayTasks.length },
+      { key:'archive', label:'Archivo', icon:'archive', count:archiveCount, overlay:'archive' },
+      { key:'settings', label:'Ajustes', icon:'settings' },
+    ]},
+  ];
+  const allNavItems = navSections.flatMap(s=>s.items);
+  const mobileNavItems = [
+    { key:'inbox', label:'Inbox', icon:'inbox', count:inboxCount },
+    { key:'today', label:'Hoy', icon:'today', count:todayTasks.length },
+    { key:'upcoming', label:'Próximas', icon:'upcoming', count:upcomingTasks.length },
+    { key:'projects', label:'Proyectos', icon:'projects', count:activeProjects },
+    { key:'more', label:'Más', icon:'more' },
+  ];
+  const mobileMoreItems = allNavItems.filter(item => !mobileNavItems.some(m => m.key===item.key));
+  const moreActive = mobileMoreItems.some(item => item.key===tab);
+  const pickMenuItem = (key) => {
+    const item = allNavItems.find(x=>x.key===key);
+    if (item?.overlay) setOverlay(item.overlay);
+    else { setTab(key); setOverlay(null); }
+  };
+  const todayInsights = [
+    { label:'Vencidas', value:overdueCount },
+    { label:'Quick wins', value:quickWinsCount },
+    { label:'Esperando', value:waitingTasks.length },
+    { label:'Sin fecha', value:noDateCount },
+  ];
+  const upcomingInsights = [
+    { label:'Próximas', value:upcomingTasks.length },
+    { label:'Calendario', value:calendarCount },
+    { label:'Proyectos', value:activeProjects },
+    { label:'Algún día', value:somedayTasks.length },
+  ];
+  const pendingInsights = [
+    { label:'Activas', value:pendingTasks.length },
+    { label:'Hoy', value:todayTasks.length },
+    { label:'Sin fecha', value:noDateCount },
+    { label:'Esperando', value:waitingTasks.length },
   ];
 
   return (
     <div className="app">
       <aside className="desktop-sidebar">
         <div className="sidebar-brand">To do</div>
+        <div className="sidebar-summary">
+          <span>Hoy</span>
+          <strong>{todayTasks.length}</strong>
+          <small>{overdueCount} vencidas · {waitingTasks.length} esperando</small>
+        </div>
         <div className="sidebar-nav">
-          {desktopNavItems.map(([k,l,count])=>(
-            <button key={k} className={'sidebar-item'+(tab===k?' active':'')} onClick={()=>setTab(k)}>
-              <Icon name={k} /><span>{l}</span>
-              {count!==null && <strong>{count}</strong>}
-            </button>
+          {navSections.map(section=>(
+            <div className="sidebar-section" key={section.title}>
+              <div className="sidebar-section-title">{section.title}</div>
+              {section.items.map(item=>(
+                <button key={item.key} className={'sidebar-item'+(tab===item.key?' active':'')} onClick={()=> item.overlay ? setOverlay(item.overlay) : setTab(item.key)}>
+                  <Icon name={item.icon} /><span>{item.label}</span>
+                  {item.count!==undefined && <strong>{item.count}</strong>}
+                </button>
+              ))}
+            </div>
           ))}
         </div>
         <button className="sidebar-add" onClick={()=>setAdding({})}>+ Nueva tarea</button>
       </aside>
 
       <main className="main-view">
-        {tab==='pending' && <Pendientes data={data} act={act} onOpen={openTask} />}
         {tab==='inbox' && <Inbox data={data} act={act}
           onProcess={(item)=>{ setProcessing(item); }} />}
         {tab==='today' && <TaskListPage title="Today" greeting="Enfoque del día"
           stats={`${todayTasks.length} tareas para hoy o vencidas`} tasks={todayTasks}
-          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})}
+          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})} insights={todayInsights}
           emptyTitle="Nada para hoy" emptyText="Agrega una tarea o revisa Upcoming para planear lo siguiente." />}
         {tab==='upcoming' && <TaskListPage title="Upcoming" greeting="Lo que viene"
           stats={`${upcomingTasks.length} tareas programadas`} tasks={upcomingTasks}
-          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})}
+          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})} insights={upcomingInsights}
           emptyTitle="Sin próximas fechas" emptyText="Las tareas futuras aparecerán aquí cuando tengan fecha." />}
+        {tab==='pending' && <TaskListPage title="Todo" greeting="Todas las tareas activas"
+          stats={`${pendingTasks.length} tareas abiertas`} tasks={pendingTasks}
+          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})} insights={pendingInsights}
+          emptyTitle="Todo al día" emptyText="No tienes pendientes. Toca + para capturar algo." />}
         {tab==='completed' && <TaskListPage title="Completed" greeting="Trabajo terminado"
           stats={`${completedTasks.length} tareas completadas`} tasks={completedTasks}
           data={data} act={act} onOpen={openTask}
           emptyTitle="Aún no hay completadas" emptyText="Cuando cierres tareas, quedarán aquí para consulta rápida." />}
+        {tab==='waiting' && <TaskListPage title="Esperando" greeting="Delegado o bloqueado"
+          stats={`${waitingTasks.length} tareas esperando respuesta`} tasks={waitingTasks}
+          data={data} act={act} onOpen={openTask} showWhen={false}
+          emptyTitle="Nada esperando" emptyText="Las tareas marcadas como esperando aparecerán aquí." />}
+        {tab==='someday' && <TaskListPage title="Algún día" greeting="Ideas para revisar después"
+          stats={`${somedayTasks.length} tareas aparcadas`} tasks={somedayTasks}
+          data={data} act={act} onOpen={openTask} showWhen={false}
+          emptyTitle="Nada en algún día" emptyText="Las ideas sin compromiso de fecha vivirán aquí." />}
         {tab==='settings' && <SettingsPage data={data} act={act} />}
         {tab==='areas' && <Areas data={data} onOpenArea={(a)=>setOverlay('area:'+a.id)} onEditArea={(a)=>setEditingArea(a)} onAddArea={()=>setEditingArea({})} />}
         {tab==='contexts' && <Contexts data={data} onOpenContext={(c)=>setOverlay('ctx:'+c.id)} onEditContext={(c)=>setEditingCtx(c)} onAddContext={()=>setEditingCtx({})} />}
@@ -973,12 +1096,13 @@ function App() {
         {tab==='calendar' && <CalendarView data={data} act={act} onOpen={openTask} />}
       </main>
 
-      {(tab==='pending' || tab==='today' || tab==='upcoming') && <button className="fab" onClick={()=>setAdding({})}>+</button>}
+      {(['pending','today','upcoming','inbox'].includes(tab)) && <button className="fab" onClick={()=>setAdding({})}>+</button>}
 
       <div className="nav">
-        {mobileNavItems.map(([k,l])=>(
-          <div key={k} className={'nav-item'+(tab===k?' active':'')} onClick={()=>setTab(k)}>
-            <Icon name={k} /><span>{l}</span>
+        {mobileNavItems.map(item=>(
+          <div key={item.key} className={'nav-item'+(tab===item.key || (item.key==='more' && moreActive)?' active':'')}
+            onClick={()=> item.key==='more' ? setOverlay('more') : setTab(item.key)}>
+            <Icon name={item.icon} /><span>{item.label}</span>
           </div>
         ))}
       </div>
@@ -996,7 +1120,7 @@ function App() {
           </div>
         </div>
       )}
-      {overlay==='more' && <MoreMenu onClose={()=>setOverlay(null)} onPick={(k)=>setOverlay(k)} />}
+      {overlay==='more' && <MoreMenu items={mobileMoreItems} onClose={()=>setOverlay(null)} onPick={pickMenuItem} />}
       {overlay==='search' && <SearchSheet data={data} act={act} onOpen={(id)=>{setOverlay(null);openTask(id);}} onClose={()=>setOverlay(null)} />}
       {overlay==='archive' && <ArchiveSheet data={data} act={act} onOpen={(id)=>{setOverlay(null);openTask(id);}} onClose={()=>setOverlay(null)} />}
       {overlay==='settings' && <SettingsSheet data={data} act={act} onClose={()=>setOverlay(null)} />}
