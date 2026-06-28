@@ -1343,7 +1343,8 @@ function CalendarView({
 }) {
   const [month, setMonth] = useState(startOfDay(new Date()));
   const [sel, setSel] = useState(startOfDay(new Date()));
-  const tasksOn = d => data.tasks.filter(t => t.status === 'active' && isSameDay(t.dueDate, d));
+  const pendingOn = d => data.tasks.filter(t => t.status === 'active' && isSameDay(t.dueDate, d));
+  const tasksOn = d => data.tasks.filter(t => (t.status === 'active' || t.status === 'completed') && isSameDay(t.dueDate, d)).sort((a, b) => (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0));
   const cells = useMemo(() => {
     const first = new Date(month.getFullYear(), month.getMonth(), 1);
     const lead = (first.getDay() + 6) % 7;
@@ -1393,7 +1394,7 @@ function CalendarView({
       key: i,
       className: "cal-day muted"
     });
-    const ts = tasksOn(d);
+    const ts = pendingOn(d);
     const cls = 'cal-day' + (isToday(d) ? ' today' : '') + (isSameDay(d, sel) && !isToday(d) ? ' sel' : '');
     return React.createElement("div", {
       key: i,
@@ -2927,7 +2928,7 @@ function App() {
       title: c?.name || 'Contexto',
       data: data,
       act: act,
-      tasks: data.tasks.filter(t => t.status === 'active' && t.contextId === c?.id),
+      tasks: data.tasks.filter(t => (t.status === 'active' || t.status === 'completed') && t.contextId === c?.id).sort((x, y) => (x.status === 'completed' ? 1 : 0) - (y.status === 'completed' ? 1 : 0)),
       onOpen: id => {
         setOverlay(null);
         openTask(id);
@@ -2940,7 +2941,7 @@ function App() {
       title: a?.name || 'Área',
       data: data,
       act: act,
-      tasks: data.tasks.filter(t => t.status === 'active' && t.areaId === a?.id),
+      tasks: data.tasks.filter(t => (t.status === 'active' || t.status === 'completed') && t.areaId === a?.id).sort((x, y) => (x.status === 'completed' ? 1 : 0) - (y.status === 'completed' ? 1 : 0)),
       onOpen: id => {
         setOverlay(null);
         openTask(id);
@@ -2953,7 +2954,7 @@ function App() {
       title: p?.name || 'Proyecto',
       data: data,
       act: act,
-      tasks: data.tasks.filter(t => t.projectId === p?.id && t.status !== 'deleted'),
+      tasks: data.tasks.filter(t => t.projectId === p?.id && (t.status === 'active' || t.status === 'completed')).sort((x, y) => (x.status === 'completed' ? 1 : 0) - (y.status === 'completed' ? 1 : 0)),
       onOpen: id => {
         setOverlay(null);
         openTask(id);
