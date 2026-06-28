@@ -156,6 +156,7 @@
   .cal-nav { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; }
   .cal-nav button { background: none; border: none; color: var(--text-2); font-size: 18px; cursor: pointer; padding: 6px 10px; }
   .cal-nav .m { font-size: 15px; font-weight: 600; }
+  .calendar-card, .calendar-agenda { min-width: 0; }
   .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
   .cal-lbl { font-size: 9px; color: var(--text-3); text-align: center; text-transform: uppercase;
     letter-spacing: 0.08em; padding: 6px 0; font-weight: 600; }
@@ -166,6 +167,7 @@
   .cal-day.today { background: var(--grad); color: #fff; font-weight: 700; }
   .cal-dots { display: flex; gap: 2px; margin-top: 2px; height: 3px; }
   .cal-dot { width: 3px; height: 3px; border-radius: 50%; }
+  .calendar-empty { font-size: 13px; color: var(--text-2); padding: 4px 0; }
 
   /* Sheet / modal */
   .scrim { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex;
@@ -572,9 +574,62 @@
     .form { padding: 8px 28px 36px; }
     .form h2 { font-size: 20px; }
 
-    .cal-grid { gap: 6px; }
-    .cal-day { font-size: 14px; border-radius: 10px; min-height: 42px; }
+    .calendar-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+      gap: 18px;
+      align-items: start;
+    }
+    .calendar-card,
+    .calendar-agenda {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+    }
+    .calendar-card { padding: 16px; }
+    .calendar-agenda { padding: 18px; }
+    .calendar-agenda .section-title { margin-top: 0; }
+    .cal-nav { margin: 0 0 14px; }
+    .cal-nav button {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 0;
+    }
+    .cal-grid {
+      gap: 8px;
+      grid-auto-rows: minmax(58px, 72px);
+    }
+    .cal-lbl {
+      padding: 0 0 4px;
+      align-self: end;
+      font-size: 10px;
+    }
+    .cal-day {
+      aspect-ratio: auto;
+      min-height: 58px;
+      align-items: flex-start;
+      justify-content: flex-start;
+      padding: 9px;
+      border-radius: 10px;
+      background: var(--surface-soft);
+      font-size: 13px;
+      border: 1px solid transparent;
+    }
+    .cal-day:hover { border-color: var(--border); background: var(--surface); }
+    .cal-day.sel { background: var(--surface); border-color: var(--border-strong); }
+    .cal-day.today { background: var(--text); color: var(--bg-2); }
+    .cal-dots { margin-top: auto; padding-top: 8px; height: auto; }
+    .cal-dot { width: 5px; height: 5px; }
     .cal-nav .m { font-size: 16px; font-weight: 650; }
+    .calendar-empty {
+      background: var(--surface-soft);
+      border-radius: 10px;
+      padding: 14px;
+      line-height: 1.4;
+    }
   }
 
   @media (min-width: 1200px) {
@@ -1298,7 +1353,11 @@ function CalendarView({
   }, React.createElement("h1", null, "Calendario")), React.createElement("div", {
     className: "stats"
   }, "Tareas con fecha")), React.createElement("div", {
-    className: "content"
+    className: "content calendar-content"
+  }, React.createElement("div", {
+    className: "calendar-shell"
+  }, React.createElement("div", {
+    className: "calendar-card"
   }, React.createElement("div", {
     className: "cal-nav"
   }, React.createElement("button", {
@@ -1338,17 +1397,15 @@ function CalendarView({
         }
       });
     })));
-  })), React.createElement("div", {
+  }))), React.createElement("div", {
+    className: "calendar-agenda"
+  }, React.createElement("div", {
     className: "section-title"
   }, cap(fmt(sel, {
     weekday: 'long',
     day: 'numeric'
   }))), dayTasks.length === 0 && React.createElement("p", {
-    style: {
-      fontSize: 13,
-      color: 'var(--text-2)',
-      padding: '4px 0'
-    }
+    className: "calendar-empty"
   }, "Sin tareas con fecha este día"), dayTasks.map(t => React.createElement(TaskCard, {
     key: t.id,
     task: t,
@@ -1356,7 +1413,7 @@ function CalendarView({
     contexts: data.contexts,
     onToggle: () => act.toggle(t.id),
     onOpen: () => onOpen(t.id)
-  }))));
+  }))))));
 }
 function AddFlow({
   data,

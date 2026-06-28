@@ -436,33 +436,39 @@ function CalendarView({ data, act, onOpen }) {
         <div className="title-row"><h1>Calendario</h1></div>
         <div className="stats">Tareas con fecha</div>
       </div>
-      <div className="content">
-        <div className="cal-nav">
-          <button onClick={()=>setMonth(new Date(month.getFullYear(), month.getMonth()-1, 1))}>‹</button>
-          <span className="m">{cap(fmt(month, { month:'long', year:'numeric' }))}</span>
-          <button onClick={()=>setMonth(new Date(month.getFullYear(), month.getMonth()+1, 1))}>›</button>
+      <div className="content calendar-content">
+        <div className="calendar-shell">
+          <div className="calendar-card">
+            <div className="cal-nav">
+              <button onClick={()=>setMonth(new Date(month.getFullYear(), month.getMonth()-1, 1))}>‹</button>
+              <span className="m">{cap(fmt(month, { month:'long', year:'numeric' }))}</span>
+              <button onClick={()=>setMonth(new Date(month.getFullYear(), month.getMonth()+1, 1))}>›</button>
+            </div>
+            <div className="cal-grid">
+              {['L','M','M','J','V','S','D'].map((d,i)=><div className="cal-lbl" key={i}>{d}</div>)}
+              {cells.map((d,i) => {
+                if (!d) return <div key={i} className="cal-day muted"/>;
+                const ts = tasksOn(d);
+                const cls = 'cal-day' + (isToday(d)?' today':'') + (isSameDay(d,sel)&&!isToday(d)?' sel':'');
+                return (
+                  <div key={i} className={cls} onClick={()=>setSel(startOfDay(d))}>
+                    <span>{d.getDate()}</span>
+                    <div className="cal-dots">{ts.slice(0,3).map((t,j)=>{
+                      const c = data.areas.find(a=>a.id===t.areaId)?.color || '#4F8CFF';
+                      return <span className="cal-dot" key={j} style={{background:c}}/>;
+                    })}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="calendar-agenda">
+            <div className="section-title">{cap(fmt(sel, { weekday:'long', day:'numeric' }))}</div>
+            {dayTasks.length===0 && <p className="calendar-empty">Sin tareas con fecha este día</p>}
+            {dayTasks.map(t => <TaskCard key={t.id} task={t} areas={data.areas} contexts={data.contexts}
+              onToggle={()=>act.toggle(t.id)} onOpen={()=>onOpen(t.id)} />)}
+          </div>
         </div>
-        <div className="cal-grid">
-          {['L','M','M','J','V','S','D'].map((d,i)=><div className="cal-lbl" key={i}>{d}</div>)}
-          {cells.map((d,i) => {
-            if (!d) return <div key={i} className="cal-day muted"/>;
-            const ts = tasksOn(d);
-            const cls = 'cal-day' + (isToday(d)?' today':'') + (isSameDay(d,sel)&&!isToday(d)?' sel':'');
-            return (
-              <div key={i} className={cls} onClick={()=>setSel(startOfDay(d))}>
-                <span>{d.getDate()}</span>
-                <div className="cal-dots">{ts.slice(0,3).map((t,j)=>{
-                  const c = data.areas.find(a=>a.id===t.areaId)?.color || '#4F8CFF';
-                  return <span className="cal-dot" key={j} style={{background:c}}/>;
-                })}</div>
-              </div>
-            );
-          })}
-        </div>
-        <div className="section-title">{cap(fmt(sel, { weekday:'long', day:'numeric' }))}</div>
-        {dayTasks.length===0 && <p style={{fontSize:13,color:'var(--text-2)',padding:'4px 0'}}>Sin tareas con fecha este día</p>}
-        {dayTasks.map(t => <TaskCard key={t.id} task={t} areas={data.areas} contexts={data.contexts}
-          onToggle={()=>act.toggle(t.id)} onOpen={()=>onOpen(t.id)} />)}
       </div>
     </>
   );
