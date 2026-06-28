@@ -81,6 +81,7 @@
   .quick-badge { padding: 3px 7px; background: rgba(255,181,71,0.14); color: #FFB547; border-radius: 6px;
     font-size: 11px; font-weight: 600; }
   .waiting-since { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+  .completed-since { font-size: 12px; color: #34C77B; margin-top: 4px; font-weight: 500; }
 
   /* Area card */
   .area-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
@@ -886,6 +887,10 @@ function TaskCard({
   const ctx = contexts.find(c => c.id === task.contextId);
   const w = showWhen ? whenInfo(task.dueDate) : null;
   const overdue = task.status === 'active' && task.dueDate && startOfDay(task.dueDate) < startOfDay(new Date());
+  const doneLabel = task.status === 'completed' && task.completedAt ? (isToday(task.completedAt) ? 'Completada hoy' : isSameDay(task.completedAt, addDays(new Date(), -1)) ? 'Completada ayer' : 'Completada el ' + fmt(task.completedAt, {
+    day: 'numeric',
+    month: 'short'
+  })) : null;
   return React.createElement("div", {
     className: 'task' + (task.status === 'completed' ? ' done' : '') + (overdue ? ' overdue' : ''),
     onClick: onOpen
@@ -919,7 +924,9 @@ function TaskCard({
     className: "context-tag"
   }, ctx.name), task.isQuickWin && React.createElement("span", {
     className: "quick-badge"
-  }, "2 MIN")), showWaiting && React.createElement("div", {
+  }, "2 MIN")), doneLabel && React.createElement("div", {
+    className: "completed-since"
+  }, "✓ ", doneLabel), showWaiting && React.createElement("div", {
     className: "waiting-since"
   }, task.waitingFrom ? task.waitingFrom + ' · ' : '', "esperando hace ", daysBetween(task.createdAt), " ", daysBetween(task.createdAt) === 1 ? 'día' : 'días')));
 }
@@ -2742,7 +2749,7 @@ function App() {
       setProcessing(item);
     }
   }), tab === 'today' && React.createElement(TaskListPage, {
-    title: "Today",
+    title: "Hoy",
     greeting: "Enfoque del día",
     stats: `${todayTasks.length} tareas para hoy o vencidas`,
     tasks: todayTasks,
@@ -2754,7 +2761,7 @@ function App() {
     emptyTitle: "Nada para hoy",
     emptyText: "Agrega una tarea o revisa Upcoming para planear lo siguiente."
   }), tab === 'upcoming' && React.createElement(TaskListPage, {
-    title: "Upcoming",
+    title: "Próximas",
     greeting: "Lo que viene",
     stats: `${upcomingTasks.length} tareas programadas`,
     tasks: upcomingTasks,
@@ -2766,7 +2773,7 @@ function App() {
     emptyTitle: "Sin próximas fechas",
     emptyText: "Las tareas futuras aparecerán aquí cuando tengan fecha."
   }), tab === 'completed' && React.createElement(TaskListPage, {
-    title: "Completed",
+    title: "Completadas",
     greeting: "Trabajo terminado",
     stats: `${completedTasks.length} tareas completadas`,
     tasks: completedTasks,
