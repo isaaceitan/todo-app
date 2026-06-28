@@ -889,9 +889,7 @@ function ProjectForm({ project, areas, onSave, onComplete, onDelete, onClose }) 
 /* ----------------------------- App ----------------------------- */
 function App() {
   const [data, setData] = useState(null);
-  const [tab, setTab] = useState(() =>
-    window.matchMedia && window.matchMedia('(min-width: 768px)').matches ? 'today' : 'pending'
-  );
+  const [tab, setTab] = useState('pending');
   const [adding, setAdding] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -979,21 +977,22 @@ function App() {
   const overdueCount = todayTasks.filter(t=>t.dueDate && startOfDay(t.dueDate) < today).length;
   const quickWinsCount = pendingTasks.filter(t=>t.isQuickWin).length;
 
+  const primaryNavItems = [
+    { key:'pending', label:'Pendientes', icon:'pending', count:pendingTasks.length },
+    { key:'areas', label:'Áreas', icon:'areas', count:data.areas.length },
+    { key:'projects', label:'Proyectos', icon:'projects', count:activeProjects },
+    { key:'contexts', label:'Contextos', icon:'contexts', count:data.contexts.length },
+    { key:'calendar', label:'Calendario', icon:'calendar', count:calendarCount },
+  ];
   const navSections = [
+    { title:'Principal', items:primaryNavItems },
     { title:'Captura', items:[
       { key:'inbox', label:'Inbox', icon:'inbox', count:inboxCount },
       { key:'search', label:'Buscar', icon:'search', overlay:'search' },
-      { key:'pending', label:'Todo', icon:'pending', count:pendingTasks.length },
     ]},
     { title:'Plan', items:[
       { key:'today', label:'Hoy', icon:'today', count:todayTasks.length },
       { key:'upcoming', label:'Próximas', icon:'upcoming', count:upcomingTasks.length },
-      { key:'calendar', label:'Calendario', icon:'calendar', count:calendarCount },
-    ]},
-    { title:'Organizar', items:[
-      { key:'projects', label:'Proyectos', icon:'projects', count:activeProjects },
-      { key:'areas', label:'Áreas', icon:'areas', count:data.areas.length },
-      { key:'contexts', label:'Contextos', icon:'contexts', count:data.contexts.length },
     ]},
     { title:'Revisar', items:[
       { key:'completed', label:'Completadas', icon:'completed', count:completedTasks.length },
@@ -1004,13 +1003,7 @@ function App() {
     ]},
   ];
   const allNavItems = navSections.flatMap(s=>s.items);
-  const mobileNavItems = [
-    { key:'inbox', label:'Inbox', icon:'inbox', count:inboxCount },
-    { key:'today', label:'Hoy', icon:'today', count:todayTasks.length },
-    { key:'upcoming', label:'Próximas', icon:'upcoming', count:upcomingTasks.length },
-    { key:'projects', label:'Proyectos', icon:'projects', count:activeProjects },
-    { key:'more', label:'Más', icon:'more' },
-  ];
+  const mobileNavItems = primaryNavItems;
   const mobileMoreItems = allNavItems.filter(item => !mobileNavItems.some(m => m.key===item.key));
   const moreActive = mobileMoreItems.some(item => item.key===tab);
   const pickMenuItem = (key) => {
@@ -1063,6 +1056,7 @@ function App() {
       </aside>
 
       <main className="main-view">
+        {tab==='pending' && <Pendientes data={data} act={act} onOpen={openTask} />}
         {tab==='inbox' && <Inbox data={data} act={act}
           onProcess={(item)=>{ setProcessing(item); }} />}
         {tab==='today' && <TaskListPage title="Today" greeting="Enfoque del día"
@@ -1073,10 +1067,6 @@ function App() {
           stats={`${upcomingTasks.length} tareas programadas`} tasks={upcomingTasks}
           data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})} insights={upcomingInsights}
           emptyTitle="Sin próximas fechas" emptyText="Las tareas futuras aparecerán aquí cuando tengan fecha." />}
-        {tab==='pending' && <TaskListPage title="Todo" greeting="Todas las tareas activas"
-          stats={`${pendingTasks.length} tareas abiertas`} tasks={pendingTasks}
-          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})} insights={pendingInsights}
-          emptyTitle="Todo al día" emptyText="No tienes pendientes. Toca + para capturar algo." />}
         {tab==='completed' && <TaskListPage title="Completed" greeting="Trabajo terminado"
           stats={`${completedTasks.length} tareas completadas`} tasks={completedTasks}
           data={data} act={act} onOpen={openTask}

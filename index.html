@@ -294,13 +294,14 @@
       margin: 0 2px 18px;
       padding: 14px;
       border-radius: 14px;
-      color: #fff;
-      background: linear-gradient(135deg, #141923, #315BFF 105%);
-      box-shadow: 0 16px 28px rgba(49,91,255,0.18);
+      color: var(--text);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
     }
-    .sidebar-summary span { display: block; font-size: 12px; color: rgba(255,255,255,0.7); }
-    .sidebar-summary strong { display: block; font-size: 34px; line-height: 1; margin-top: 6px; }
-    .sidebar-summary small { display: block; margin-top: 8px; color: rgba(255,255,255,0.72); font-size: 11px; }
+    .sidebar-summary span { display: block; font-size: 12px; color: var(--text-2); }
+    .sidebar-summary strong { display: block; font-size: 30px; line-height: 1; margin-top: 6px; }
+    .sidebar-summary small { display: block; margin-top: 8px; color: var(--text-2); font-size: 11px; }
     .sidebar-nav { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding-right: 2px; }
     .sidebar-section { display: flex; flex-direction: column; gap: 4px; }
     .sidebar-section-title {
@@ -440,14 +441,7 @@
     }
     .insight-value { font-size: 28px; }
     .insight-label { font-size: 12px; }
-    .insight-card:first-child {
-      color: #fff;
-      background: linear-gradient(135deg, #171923, #315BFF);
-      border-color: transparent;
-    }
-    .insight-card:first-child .insight-label { color: rgba(255,255,255,0.75); }
-    .insight-card:nth-child(2) { border-color: rgba(52,199,123,0.22); }
-    .insight-card:nth-child(3) { border-color: rgba(255,181,71,0.26); }
+    .insight-card { border-color: var(--border); }
     .task {
       background: transparent;
       border: 1px solid transparent;
@@ -2300,7 +2294,7 @@ function ProjectForm({
 }
 function App() {
   const [data, setData] = useState(null);
-  const [tab, setTab] = useState(() => window.matchMedia && window.matchMedia('(min-width: 768px)').matches ? 'today' : 'pending');
+  const [tab, setTab] = useState('pending');
   const [adding, setAdding] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -2513,7 +2507,36 @@ function App() {
   const noDateCount = pendingTasks.filter(t => !t.dueDate).length;
   const overdueCount = todayTasks.filter(t => t.dueDate && startOfDay(t.dueDate) < today).length;
   const quickWinsCount = pendingTasks.filter(t => t.isQuickWin).length;
+  const primaryNavItems = [{
+    key: 'pending',
+    label: 'Pendientes',
+    icon: 'pending',
+    count: pendingTasks.length
+  }, {
+    key: 'areas',
+    label: 'Áreas',
+    icon: 'areas',
+    count: data.areas.length
+  }, {
+    key: 'projects',
+    label: 'Proyectos',
+    icon: 'projects',
+    count: activeProjects
+  }, {
+    key: 'contexts',
+    label: 'Contextos',
+    icon: 'contexts',
+    count: data.contexts.length
+  }, {
+    key: 'calendar',
+    label: 'Calendario',
+    icon: 'calendar',
+    count: calendarCount
+  }];
   const navSections = [{
+    title: 'Principal',
+    items: primaryNavItems
+  }, {
     title: 'Captura',
     items: [{
       key: 'inbox',
@@ -2525,11 +2548,6 @@ function App() {
       label: 'Buscar',
       icon: 'search',
       overlay: 'search'
-    }, {
-      key: 'pending',
-      label: 'Todo',
-      icon: 'pending',
-      count: pendingTasks.length
     }]
   }, {
     title: 'Plan',
@@ -2543,29 +2561,6 @@ function App() {
       label: 'Próximas',
       icon: 'upcoming',
       count: upcomingTasks.length
-    }, {
-      key: 'calendar',
-      label: 'Calendario',
-      icon: 'calendar',
-      count: calendarCount
-    }]
-  }, {
-    title: 'Organizar',
-    items: [{
-      key: 'projects',
-      label: 'Proyectos',
-      icon: 'projects',
-      count: activeProjects
-    }, {
-      key: 'areas',
-      label: 'Áreas',
-      icon: 'areas',
-      count: data.areas.length
-    }, {
-      key: 'contexts',
-      label: 'Contextos',
-      icon: 'contexts',
-      count: data.contexts.length
     }]
   }, {
     title: 'Revisar',
@@ -2597,31 +2592,7 @@ function App() {
     }]
   }];
   const allNavItems = navSections.flatMap(s => s.items);
-  const mobileNavItems = [{
-    key: 'inbox',
-    label: 'Inbox',
-    icon: 'inbox',
-    count: inboxCount
-  }, {
-    key: 'today',
-    label: 'Hoy',
-    icon: 'today',
-    count: todayTasks.length
-  }, {
-    key: 'upcoming',
-    label: 'Próximas',
-    icon: 'upcoming',
-    count: upcomingTasks.length
-  }, {
-    key: 'projects',
-    label: 'Proyectos',
-    icon: 'projects',
-    count: activeProjects
-  }, {
-    key: 'more',
-    label: 'Más',
-    icon: 'more'
-  }];
+  const mobileNavItems = primaryNavItems;
   const mobileMoreItems = allNavItems.filter(item => !mobileNavItems.some(m => m.key === item.key));
   const moreActive = mobileMoreItems.some(item => item.key === tab);
   const pickMenuItem = key => {
@@ -2696,7 +2667,11 @@ function App() {
     onClick: () => setAdding({})
   }, "+ Nueva tarea")), React.createElement("main", {
     className: "main-view"
-  }, tab === 'inbox' && React.createElement(Inbox, {
+  }, tab === 'pending' && React.createElement(Pendientes, {
+    data: data,
+    act: act,
+    onOpen: openTask
+  }), tab === 'inbox' && React.createElement(Inbox, {
     data: data,
     act: act,
     onProcess: item => {
@@ -2726,18 +2701,6 @@ function App() {
     insights: upcomingInsights,
     emptyTitle: "Sin próximas fechas",
     emptyText: "Las tareas futuras aparecerán aquí cuando tengan fecha."
-  }), tab === 'pending' && React.createElement(TaskListPage, {
-    title: "Todo",
-    greeting: "Todas las tareas activas",
-    stats: `${pendingTasks.length} tareas abiertas`,
-    tasks: pendingTasks,
-    data: data,
-    act: act,
-    onOpen: openTask,
-    onAdd: () => setAdding({}),
-    insights: pendingInsights,
-    emptyTitle: "Todo al día",
-    emptyText: "No tienes pendientes. Toca + para capturar algo."
   }), tab === 'completed' && React.createElement(TaskListPage, {
     title: "Completed",
     greeting: "Trabajo terminado",
