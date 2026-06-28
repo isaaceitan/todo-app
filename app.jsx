@@ -101,11 +101,15 @@ function saveData(data) {
 const Icon = ({ name }) => {
   const p = {
     pending: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
+    today: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
     inbox: 'M3 13h4l2 3h6l2-3h4M3 13l3-8h12l3 8M3 13v6h18v-6',
+    upcoming: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
     areas: 'M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z',
     contexts: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
     projects: 'M3 5h18M3 12h18M3 19h18',
     calendar: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
+    completed: 'M20 6L9 17l-5-5',
+    settings: 'M12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5zM19.4 15a1.7 1.7 0 00.34 1.88l.04.04a2 2 0 01-2.83 2.83l-.04-.04A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6l-.03.04a2 2 0 01-3.46-2l.02-.05A1.7 1.7 0 009.4 15a1.7 1.7 0 00-1.88-.34l-.05.02a2 2 0 01-2-3.46l.04-.03A1.7 1.7 0 006.6 9a1.7 1.7 0 00-.6-1l-.04-.03a2 2 0 012.83-2.83l.04.04A1.7 1.7 0 0010 4.6a1.7 1.7 0 001-.6l.03-.04a2 2 0 013.46 2l-.02.05A1.7 1.7 0 0014.6 9a1.7 1.7 0 001.88.34l.05-.02a2 2 0 012 3.46l-.04.03A1.7 1.7 0 0019.4 15z',
   }[name];
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d={p}/></svg>;
 };
@@ -150,8 +154,9 @@ function TaskCard({ task, areas, contexts, onToggle, onOpen, showWaiting, showWh
   const area = areas.find(a => a.id === task.areaId);
   const ctx = contexts.find(c => c.id === task.contextId);
   const w = showWhen ? whenInfo(task.dueDate) : null;
+  const overdue = task.status === 'active' && task.dueDate && startOfDay(task.dueDate) < startOfDay(new Date());
   return (
-    <div className={'task' + (task.status === 'completed' ? ' done' : '')} onClick={onOpen}>
+    <div className={'task' + (task.status === 'completed' ? ' done' : '') + (overdue ? ' overdue' : '')} onClick={onOpen}>
       <div className={'checkbox' + (task.status === 'completed' ? ' checked' : '')}
            onClick={(e) => { e.stopPropagation(); onToggle(); }} />
       <div className="task-body">
@@ -170,6 +175,26 @@ function TaskCard({ task, areas, contexts, onToggle, onOpen, showWaiting, showWh
         )}
       </div>
     </div>
+  );
+}
+
+function TaskListPage({ title, greeting, stats, tasks, data, act, onOpen, onAdd, emptyTitle, emptyText, showWhen=true }) {
+  return (
+    <>
+      <div className="header">
+        <div className="greeting">{greeting}</div>
+        <div className="title-row">
+          <h1>{title}</h1>
+          {onAdd && <button className="add-task-btn" onClick={onAdd}>+ Tarea</button>}
+        </div>
+        <div className="stats">{stats}</div>
+      </div>
+      <div className="content task-list-content">
+        {tasks.length===0 && <Empty ico="✓" title={emptyTitle} text={emptyText} />}
+        {tasks.map(t => <TaskCard key={t.id} task={t} areas={data.areas} contexts={data.contexts}
+          showWhen={showWhen} onToggle={()=>act.toggle(t.id)} onOpen={()=>onOpen(t.id)} />)}
+      </div>
+    </>
   );
 }
 
@@ -670,23 +695,48 @@ function ArchiveSheet({ data, act, onOpen, onClose }) {
   );
 }
 
-function SettingsSheet({ data, act, onClose }) {
+function SettingsContent({ data, act }) {
   const deleted = data.tasks.filter(t=>t.status==='deleted');
+  return (
+    <>
+      <h2>Ajustes</h2>
+      <div className="toggle-row"><span>Tema</span><span style={{color:'var(--text-2)'}}>Sigue el sistema</span></div>
+      <div className="toggle-row"><span>Sincronización</span>
+        <span className={'sync-badge'+(hasCloud()?' on':'')}>{hasCloud()?'iCloud/Supabase activo':'Solo este dispositivo'}</span></div>
+      <div style={{marginTop:16}}>
+        <button className="btn" style={{width:'100%'}} disabled={deleted.length===0}
+          onClick={()=>{ if(confirm(`Borrar definitivamente ${deleted.length} tareas eliminadas?`)) act.emptyTrash(); }}>
+          Vaciar papelera ({deleted.length})</button>
+      </div>
+      <p style={{fontSize:12,color:'var(--text-3)',marginTop:16,lineHeight:1.5}}>To do · App de tareas basada en GTD. {hasCloud()?'Datos sincronizados en la nube.':'Datos guardados en este navegador. Configura Supabase para sincronizar con tu celular.'}</p>
+    </>
+  );
+}
+
+function SettingsPage({ data, act }) {
+  return (
+    <>
+      <div className="header">
+        <div className="greeting">Preferencias de la app</div>
+        <div className="title-row"><h1>Ajustes</h1></div>
+        <div className="stats">Sistema, sincronización y papelera</div>
+      </div>
+      <div className="content settings-page">
+        <div className="settings-card">
+          <SettingsContent data={data} act={act} />
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SettingsSheet({ data, act, onClose }) {
   return (
     <div className="scrim" onClick={onClose}>
       <div className="sheet" onClick={e=>e.stopPropagation()}>
         <div className="grab"/>
         <div className="form">
-          <h2>Ajustes</h2>
-          <div className="toggle-row"><span>Tema</span><span style={{color:'var(--text-2)'}}>Sigue el sistema</span></div>
-          <div className="toggle-row"><span>Sincronización</span>
-            <span className={'sync-badge'+(hasCloud()?' on':'')}>{hasCloud()?'iCloud/Supabase activo':'Solo este dispositivo'}</span></div>
-          <div style={{marginTop:16}}>
-            <button className="btn" style={{width:'100%'}} disabled={deleted.length===0}
-              onClick={()=>{ if(confirm(`Borrar definitivamente ${deleted.length} tareas eliminadas?`)) act.emptyTrash(); }}>
-              Vaciar papelera ({deleted.length})</button>
-          </div>
-          <p style={{fontSize:12,color:'var(--text-3)',marginTop:16,lineHeight:1.5}}>To do · App de tareas basada en GTD. {hasCloud()?'Datos sincronizados en la nube.':'Datos guardados en este navegador. Configura Supabase para sincronizar con tu celular.'}</p>
+          <SettingsContent data={data} act={act} />
         </div>
       </div>
     </div>
@@ -799,7 +849,9 @@ function ProjectForm({ project, areas, onSave, onComplete, onDelete, onClose }) 
 /* ----------------------------- App ----------------------------- */
 function App() {
   const [data, setData] = useState(null);
-  const [tab, setTab] = useState('pending');
+  const [tab, setTab] = useState(() =>
+    window.matchMedia && window.matchMedia('(min-width: 768px)').matches ? 'today' : 'pending'
+  );
   const [adding, setAdding] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -854,20 +906,77 @@ function App() {
   const editingTask = editingId ? data.tasks.find(t=>t.id===editingId) : null;
   const openTask = (id) => setEditingId(id);
 
-  const navItems = [['pending','Pendientes'],['areas','Áreas'],['contexts','Contextos'],['projects','Proyectos'],['calendar','Calendario']];
+  const byDate = (a,b) => {
+    if (!a.dueDate && !b.dueDate) return new Date(a.createdAt) - new Date(b.createdAt);
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  };
+  const today = startOfDay(new Date());
+  const inboxCount = data.inbox.filter(i=>!i.processed).length;
+  const todayTasks = data.tasks
+    .filter(t=>t.status==='active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) <= today)
+    .sort(byDate);
+  const upcomingTasks = data.tasks
+    .filter(t=>t.status==='active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) > today)
+    .sort(byDate);
+  const completedTasks = data.tasks
+    .filter(t=>t.status==='completed')
+    .sort((a,b)=>new Date(b.completedAt||b.createdAt)-new Date(a.completedAt||a.createdAt));
+  const activeProjects = data.projects.filter(p=>p.status==='active').length;
+
+  const mobileNavItems = [['pending','Pendientes'],['areas','Áreas'],['contexts','Contextos'],['projects','Proyectos'],['calendar','Calendario']];
+  const desktopNavItems = [
+    ['inbox','Inbox',inboxCount],
+    ['today','Today',todayTasks.length],
+    ['upcoming','Upcoming',upcomingTasks.length],
+    ['projects','Projects',activeProjects],
+    ['completed','Completed',completedTasks.length],
+    ['settings','Settings',null],
+  ];
 
   return (
     <div className="app">
-      {tab==='pending' && <Pendientes data={data} act={act} onOpen={openTask} />}
-      {tab==='areas' && <Areas data={data} onOpenArea={(a)=>setOverlay('area:'+a.id)} onEditArea={(a)=>setEditingArea(a)} onAddArea={()=>setEditingArea({})} />}
-      {tab==='contexts' && <Contexts data={data} onOpenContext={(c)=>setOverlay('ctx:'+c.id)} onEditContext={(c)=>setEditingCtx(c)} onAddContext={()=>setEditingCtx({})} />}
-      {tab==='projects' && <Projects data={data} onOpenProject={(p)=>setOverlay('project:'+p.id)} onEditProject={(p)=>setEditingProject(p)} onAddProject={()=>setEditingProject({})} />}
-      {tab==='calendar' && <CalendarView data={data} act={act} onOpen={openTask} />}
+      <aside className="desktop-sidebar">
+        <div className="sidebar-brand">To do</div>
+        <div className="sidebar-nav">
+          {desktopNavItems.map(([k,l,count])=>(
+            <button key={k} className={'sidebar-item'+(tab===k?' active':'')} onClick={()=>setTab(k)}>
+              <Icon name={k} /><span>{l}</span>
+              {count!==null && <strong>{count}</strong>}
+            </button>
+          ))}
+        </div>
+        <button className="sidebar-add" onClick={()=>setAdding({})}>+ Nueva tarea</button>
+      </aside>
 
-      {tab==='pending' && <button className="fab" onClick={()=>setAdding({})}>+</button>}
+      <main className="main-view">
+        {tab==='pending' && <Pendientes data={data} act={act} onOpen={openTask} />}
+        {tab==='inbox' && <Inbox data={data} act={act}
+          onProcess={(item)=>{ setProcessing(item); }} />}
+        {tab==='today' && <TaskListPage title="Today" greeting="Enfoque del día"
+          stats={`${todayTasks.length} tareas para hoy o vencidas`} tasks={todayTasks}
+          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})}
+          emptyTitle="Nada para hoy" emptyText="Agrega una tarea o revisa Upcoming para planear lo siguiente." />}
+        {tab==='upcoming' && <TaskListPage title="Upcoming" greeting="Lo que viene"
+          stats={`${upcomingTasks.length} tareas programadas`} tasks={upcomingTasks}
+          data={data} act={act} onOpen={openTask} onAdd={()=>setAdding({})}
+          emptyTitle="Sin próximas fechas" emptyText="Las tareas futuras aparecerán aquí cuando tengan fecha." />}
+        {tab==='completed' && <TaskListPage title="Completed" greeting="Trabajo terminado"
+          stats={`${completedTasks.length} tareas completadas`} tasks={completedTasks}
+          data={data} act={act} onOpen={openTask}
+          emptyTitle="Aún no hay completadas" emptyText="Cuando cierres tareas, quedarán aquí para consulta rápida." />}
+        {tab==='settings' && <SettingsPage data={data} act={act} />}
+        {tab==='areas' && <Areas data={data} onOpenArea={(a)=>setOverlay('area:'+a.id)} onEditArea={(a)=>setEditingArea(a)} onAddArea={()=>setEditingArea({})} />}
+        {tab==='contexts' && <Contexts data={data} onOpenContext={(c)=>setOverlay('ctx:'+c.id)} onEditContext={(c)=>setEditingCtx(c)} onAddContext={()=>setEditingCtx({})} />}
+        {tab==='projects' && <Projects data={data} onOpenProject={(p)=>setOverlay('project:'+p.id)} onEditProject={(p)=>setEditingProject(p)} onAddProject={()=>setEditingProject({})} />}
+        {tab==='calendar' && <CalendarView data={data} act={act} onOpen={openTask} />}
+      </main>
+
+      {(tab==='pending' || tab==='today' || tab==='upcoming') && <button className="fab" onClick={()=>setAdding({})}>+</button>}
 
       <div className="nav">
-        {navItems.map(([k,l])=>(
+        {mobileNavItems.map(([k,l])=>(
           <div key={k} className={'nav-item'+(tab===k?' active':'')} onClick={()=>setTab(k)}>
             <Icon name={k} /><span>{l}</span>
           </div>

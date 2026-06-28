@@ -39,6 +39,9 @@
   #root { max-width: 480px; margin: 0 auto; min-height: 100%; position: relative; }
 
   .app { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  .desktop-sidebar { display: none; }
+  .main-view { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
+  .add-task-btn { display: none; }
   .header { padding: max(20px, env(safe-area-inset-top)) 20px 12px; }
   .header .greeting { font-size: 13px; color: var(--text-2); margin-bottom: 2px; }
   .header .title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -220,251 +223,302 @@
   .nav-item { min-height: 48px; }
   .cal-day { min-height: 40px; }
 
-  /* ── Desktop (≥ 768px) ── */
+  /* ── Desktop / productivity layout ── */
   @media (min-width: 768px) {
-    #root { max-width: 100%; }
+    :root {
+      --bg: #F6F7F9;
+      --bg-2: #FFFFFF;
+      --surface: #FFFFFF;
+      --surface-soft: rgba(18,24,38,0.045);
+      --border: rgba(18,24,38,0.08);
+      --border-strong: rgba(18,24,38,0.14);
+      --text: #171923;
+      --text-2: #667085;
+      --text-3: #98A2B3;
+    }
 
-    /* ---- Sidebar ---- */
-    .nav {
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      right: auto;
-      width: 220px;
-      max-width: 220px;
-      margin: 0;
-      padding: 20px 10px 32px;
+    html, body { overflow-x: hidden; }
+    body { background: var(--bg); background-image: none; }
+    #root { max-width: none; margin: 0; min-height: 100%; }
+
+    .app {
+      display: grid;
+      grid-template-columns: 248px minmax(0, 1fr);
+      min-height: 100vh;
+      background: var(--bg);
+    }
+    .main-view {
+      min-width: 0;
+      min-height: 100vh;
+      align-items: center;
+    }
+    .desktop-sidebar {
+      position: sticky;
+      top: 0;
+      display: flex;
       flex-direction: column;
-      align-items: stretch;
-      justify-content: flex-start;
-      gap: 1px;
-      background: var(--bg-2);
-      border-top: none;
-      border-bottom: none;
+      height: 100vh;
+      padding: 24px 16px;
+      background: color-mix(in srgb, var(--bg-2) 92%, var(--bg));
       border-right: 1px solid var(--border);
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      overflow-y: auto;
-      z-index: 60;
     }
-
-    /* Logo / app name */
-    .nav::before {
-      content: "To do";
-      display: block;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+    .sidebar-brand {
+      padding: 0 10px 20px;
+      font-size: 18px;
+      font-weight: 750;
+      letter-spacing: 0;
       color: var(--text);
-      padding: 10px 12px 20px;
     }
-
-    /* Nav items — estilo sidebar premium */
-    .nav-item {
-      flex-direction: row;
-      justify-content: flex-start;
+    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-item {
+      width: 100%;
+      height: 40px;
+      display: flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 0 10px;
+      border: 1px solid transparent;
       border-radius: 8px;
-      font-size: 13.5px;
-      font-weight: 400;
+      background: transparent;
       color: var(--text-2);
-      min-height: unset;
-      width: 100%;
-      transition: background 0.12s, color 0.12s;
+      font: inherit;
+      font-size: 14px;
       cursor: pointer;
+      text-align: left;
     }
-    .nav-item:hover {
-      background: var(--surface-soft);
-      color: var(--text);
-    }
-    .nav-item.active {
+    .sidebar-item:hover { background: var(--surface-soft); color: var(--text); }
+    .sidebar-item.active {
       background: var(--surface);
       color: var(--text);
-      font-weight: 500;
+      border-color: var(--border);
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
     }
-    .nav-item svg {
-      width: 16px; height: 16px;
-      flex-shrink: 0;
-      opacity: 0.6;
+    .sidebar-item svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .sidebar-item span { flex: 1; }
+    .sidebar-item strong {
+      min-width: 22px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: var(--surface-soft);
+      color: var(--text-3);
+      font-size: 11px;
+      font-weight: 650;
+      text-align: center;
     }
-    .nav-item.active svg { opacity: 1; }
-    .nav-item span { flex: 1; }
+    .sidebar-add {
+      margin-top: auto;
+      height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--text);
+      color: var(--bg-2);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(16,24,40,0.08);
+    }
 
-    /* ---- Layout principal ---- */
-    .app {
-      flex-direction: column;
-      margin-left: 220px;
-      min-height: 100vh;
-    }
+    .nav { display: none; }
 
-    /* ---- Header de página ---- */
+    .header,
+    .content {
+      width: min(100%, 920px);
+      max-width: 920px;
+    }
     .header {
-      padding: 56px 64px 16px;
-      max-width: 900px;
+      padding: 54px 44px 18px;
     }
     .header .greeting {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-3);
-      margin-bottom: 10px;
+      font-size: 12px;
+      font-weight: 650;
+      letter-spacing: 0;
+      color: var(--text-2);
+      margin-bottom: 8px;
     }
     .header h1 {
       font-size: 34px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
+      font-weight: 760;
+      letter-spacing: 0;
+      line-height: 1.12;
     }
     .header .stats {
       font-size: 13px;
-      color: var(--text-3);
+      color: var(--text-2);
       margin-top: 8px;
-      font-weight: 400;
     }
     .header .title-row { align-items: center; gap: 16px; }
-    .header .icon-btn { width: 34px; height: 34px; min-width: 34px; min-height: 34px; border-radius: 8px; }
-
-    /* ---- Área de contenido ---- */
-    .content {
-      padding: 4px 64px 80px;
-      max-width: 900px;
+    .header .icon-btn {
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      min-height: 36px;
+      border-radius: 8px;
+      background: var(--surface);
+    }
+    .add-task-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 0 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--text);
+      color: var(--bg-2);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 650;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(16,24,40,0.08);
     }
 
-    /* Tareas — filas planas estilo Linear/Things */
+    .content {
+      flex: 0 0 auto;
+      padding: 0 44px 88px;
+      overflow: visible;
+    }
+    .task-list-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      min-height: 190px;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+    }
     .task {
       background: transparent;
-      border: none;
-      border-bottom: 1px solid var(--border);
-      border-radius: 0;
-      padding: 11px 8px;
-      margin-bottom: 0;
-      transition: background 0.1s;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 12px 12px;
+      margin-bottom: 2px;
+      transition: background 0.12s, border-color 0.12s;
     }
-    .task:first-of-type { border-top: 1px solid var(--border); }
     .task:hover {
       background: var(--surface-soft);
+      border-color: var(--border);
+    }
+    .task.done { opacity: 0.54; }
+    .task.done .task-title { color: var(--text-2); }
+    .task.overdue .checkbox { border-color: #FF6B6B; }
+    .task-title { font-size: 14.5px; font-weight: 520; line-height: 1.35; }
+    .task-meta { font-size: 12px; gap: 8px; }
+    .checkbox { width: 18px; height: 18px; margin-top: 1px; }
+    .context-tag,
+    .quick-badge { border-radius: 6px; }
+
+    .quick-row { margin: 0 0 12px; }
+    .quick-input {
+      background: var(--surface);
+      border-color: var(--border);
       border-radius: 8px;
-      border-color: transparent;
-      padding: 11px 12px;
-      margin: 0 -12px;
-      width: calc(100% + 24px);
+      min-height: 42px;
     }
-    .task:hover + .task { border-top-color: transparent; }
-    .task.done { opacity: 0.38; }
-    .task-title { font-size: 14px; font-weight: 400; }
-    .task-meta { font-size: 11.5px; }
-
-    .section-title {
-      font-size: 10.5px;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      color: var(--text-3);
-      margin: 32px 0 10px;
-      text-transform: uppercase;
+    .send-btn {
+      width: 44px;
+      border-radius: 8px;
+      background: var(--text);
+    }
+    .banner {
+      border-radius: 10px;
+      background: rgba(79,140,255,0.08);
+      border-color: rgba(79,140,255,0.18);
+    }
+    .inbox-item {
+      border-radius: 10px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 2px rgba(16,24,40,0.03);
     }
 
-    /* Cards (Áreas, Proyectos) */
-    .area-card {
+    .area-card,
+    .project,
+    .settings-card {
       border-radius: 12px;
-      padding: 18px;
-      cursor: pointer;
+      background: var(--surface);
+      box-shadow: 0 1px 2px rgba(16,24,40,0.04);
       transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
     }
-    .area-card:hover {
-      border-color: var(--border-strong);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-      transform: translateY(-1px);
-    }
-    .project {
-      border-radius: 12px;
-      padding: 18px;
-      cursor: pointer;
-      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
-    }
+    .area-card,
+    .project { padding: 18px; }
+    .area-card:hover,
     .project:hover {
       border-color: var(--border-strong);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      box-shadow: 0 10px 24px rgba(16,24,40,0.07);
       transform: translateY(-1px);
     }
-
-    /* Grids para Áreas y Proyectos */
-    .content:has(.area-card) {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-      gap: 12px;
-      align-content: start;
-    }
-    .content:has(.area-card) .section-title,
-    .content:has(.area-card) .empty { grid-column: 1 / -1; }
-    .content:has(.area-card) .area-card { margin-bottom: 0; }
-
+    .content:has(.area-card),
     .content:has(.project) {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 12px;
       align-content: start;
     }
+    .content:has(.area-card) .section-title,
+    .content:has(.area-card) .empty,
     .content:has(.project) .section-title,
     .content:has(.project) .empty { grid-column: 1 / -1; }
+    .content:has(.area-card) .area-card,
     .content:has(.project) .project { margin-bottom: 0; }
 
-    /* FAB — esquina inferior derecha */
-    .fab {
-      left: auto;
-      right: 32px;
-      bottom: 32px;
-      width: 46px;
-      height: 46px;
-      font-size: 24px;
-      box-shadow: 0 6px 20px rgba(79,140,255,0.4);
+    .settings-page { max-width: 680px; align-self: center; }
+    .settings-card { padding: 22px 24px; border: 1px solid var(--border); }
+    .settings-card h2 { font-size: 18px; margin-bottom: 10px; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      color: var(--text-3);
+      margin: 28px 0 10px;
+      text-transform: uppercase;
+    }
+    .empty {
+      padding: 72px 24px;
+      background: transparent;
     }
 
-    /* Modales centrados con animación suave */
+    .fab { display: none; }
+
     .scrim {
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.45);
+      background: rgba(15,23,42,0.38);
     }
     .sheet {
       border-radius: 14px;
       max-width: 560px;
       width: 92%;
       max-height: 84vh;
+      box-shadow: 0 24px 80px rgba(15,23,42,0.22);
     }
     .sheet-full {
       border-radius: 14px;
-      max-width: 640px;
+      max-width: 680px;
       width: 92%;
       height: auto;
       max-height: 88vh;
     }
     @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.96) translateY(8px); }
-      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+      from { opacity: 0; transform: scale(0.98) translateY(8px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
     }
-    .sheet { animation: modalIn 0.2s cubic-bezier(0.34, 1.1, 0.64, 1); }
+    .sheet { animation: modalIn 0.2s ease; }
     .grab { display: none; }
-
-    /* Formularios y flujo */
     .flow { height: auto; min-height: 0; padding: 36px; }
     .question { font-size: 22px; }
     .form { padding: 8px 28px 36px; }
     .form h2 { font-size: 20px; }
 
-    /* Calendario */
     .cal-grid { gap: 6px; }
-    .cal-day { font-size: 14px; border-radius: 10px; min-height: 38px; }
-    .cal-nav .m { font-size: 16px; font-weight: 600; }
+    .cal-day { font-size: 14px; border-radius: 10px; min-height: 42px; }
+    .cal-nav .m { font-size: 16px; font-weight: 650; }
   }
 
-  /* ── Pantallas anchas ── */
   @media (min-width: 1200px) {
-    .nav { width: 240px; max-width: 240px; }
-    .app { margin-left: 240px; }
-    .header { padding: 64px 80px 20px; max-width: 960px; }
-    .content { padding: 4px 80px 80px; max-width: 960px; }
+    .app { grid-template-columns: 264px minmax(0, 1fr); }
+    .header,
+    .content { width: min(100%, 980px); max-width: 980px; }
+    .header { padding-top: 64px; }
   }
 </style>
 </head>
@@ -581,11 +635,15 @@ const Icon = ({
 }) => {
   const p = {
     pending: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
+    today: 'M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11',
     inbox: 'M3 13h4l2 3h6l2-3h4M3 13l3-8h12l3 8M3 13v6h18v-6',
+    upcoming: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
     areas: 'M12 2l8.66 5v10L12 22l-8.66-5V7L12 2z',
     contexts: 'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82zM7 7h.01',
     projects: 'M3 5h18M3 12h18M3 19h18',
-    calendar: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z'
+    calendar: 'M3 8h18M7 3v4M17 3v4M4 6h16v15H4z',
+    completed: 'M20 6L9 17l-5-5',
+    settings: 'M12 15.5A3.5 3.5 0 1112 8a3.5 3.5 0 010 7.5zM19.4 15a1.7 1.7 0 00.34 1.88l.04.04a2 2 0 01-2.83 2.83l-.04-.04A1.7 1.7 0 0015 19.4a1.7 1.7 0 00-1 .6l-.03.04a2 2 0 01-3.46-2l.02-.05A1.7 1.7 0 009.4 15a1.7 1.7 0 00-1.88-.34l-.05.02a2 2 0 01-2-3.46l.04-.03A1.7 1.7 0 006.6 9a1.7 1.7 0 00-.6-1l-.04-.03a2 2 0 012.83-2.83l.04.04A1.7 1.7 0 0010 4.6a1.7 1.7 0 001-.6l.03-.04a2 2 0 013.46 2l-.02.05A1.7 1.7 0 0014.6 9a1.7 1.7 0 001.88.34l.05-.02a2 2 0 012 3.46l-.04.03A1.7 1.7 0 0019.4 15z'
   }[name];
   return React.createElement("svg", {
     viewBox: "0 0 24 24",
@@ -697,8 +755,9 @@ function TaskCard({
   const area = areas.find(a => a.id === task.areaId);
   const ctx = contexts.find(c => c.id === task.contextId);
   const w = showWhen ? whenInfo(task.dueDate) : null;
+  const overdue = task.status === 'active' && task.dueDate && startOfDay(task.dueDate) < startOfDay(new Date());
   return React.createElement("div", {
-    className: 'task' + (task.status === 'completed' ? ' done' : ''),
+    className: 'task' + (task.status === 'completed' ? ' done' : '') + (overdue ? ' overdue' : ''),
     onClick: onOpen
   }, React.createElement("div", {
     className: 'checkbox' + (task.status === 'completed' ? ' checked' : ''),
@@ -744,6 +803,46 @@ function Empty({
   }, React.createElement("div", {
     className: "ico"
   }, ico), React.createElement("h3", null, title), React.createElement("p", null, text));
+}
+function TaskListPage({
+  title,
+  greeting,
+  stats,
+  tasks,
+  data,
+  act,
+  onOpen,
+  onAdd,
+  emptyTitle,
+  emptyText,
+  showWhen = true
+}) {
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "header"
+  }, React.createElement("div", {
+    className: "greeting"
+  }, greeting), React.createElement("div", {
+    className: "title-row"
+  }, React.createElement("h1", null, title), onAdd && React.createElement("button", {
+    className: "add-task-btn",
+    onClick: onAdd
+  }, "+ Tarea")), React.createElement("div", {
+    className: "stats"
+  }, stats)), React.createElement("div", {
+    className: "content task-list-content"
+  }, tasks.length === 0 && React.createElement(Empty, {
+    ico: "✓",
+    title: emptyTitle,
+    text: emptyText
+  }), tasks.map(t => React.createElement(TaskCard, {
+    key: t.id,
+    task: t,
+    areas: data.areas,
+    contexts: data.contexts,
+    showWhen: showWhen,
+    onToggle: () => act.toggle(t.id),
+    onOpen: () => onOpen(t.id)
+  }))));
 }
 function Pendientes({
   data,
@@ -1756,23 +1855,12 @@ function ArchiveSheet({
     onOpen: () => onOpen(t.id)
   })))));
 }
-function SettingsSheet({
+function SettingsContent({
   data,
-  act,
-  onClose
+  act
 }) {
   const deleted = data.tasks.filter(t => t.status === 'deleted');
-  return React.createElement("div", {
-    className: "scrim",
-    onClick: onClose
-  }, React.createElement("div", {
-    className: "sheet",
-    onClick: e => e.stopPropagation()
-  }, React.createElement("div", {
-    className: "grab"
-  }), React.createElement("div", {
-    className: "form"
-  }, React.createElement("h2", null, "Ajustes"), React.createElement("div", {
+  return React.createElement(React.Fragment, null, React.createElement("h2", null, "Ajustes"), React.createElement("div", {
     className: "toggle-row"
   }, React.createElement("span", null, "Tema"), React.createElement("span", {
     style: {
@@ -1802,7 +1890,48 @@ function SettingsSheet({
       marginTop: 16,
       lineHeight: 1.5
     }
-  }, "To do · App de tareas basada en GTD. ", hasCloud() ? 'Datos sincronizados en la nube.' : 'Datos guardados en este navegador. Configura Supabase para sincronizar con tu celular.'))));
+  }, "To do · App de tareas basada en GTD. ", hasCloud() ? 'Datos sincronizados en la nube.' : 'Datos guardados en este navegador. Configura Supabase para sincronizar con tu celular.'));
+}
+function SettingsPage({
+  data,
+  act
+}) {
+  return React.createElement(React.Fragment, null, React.createElement("div", {
+    className: "header"
+  }, React.createElement("div", {
+    className: "greeting"
+  }, "Preferencias de la app"), React.createElement("div", {
+    className: "title-row"
+  }, React.createElement("h1", null, "Ajustes")), React.createElement("div", {
+    className: "stats"
+  }, "Sistema, sincronización y papelera")), React.createElement("div", {
+    className: "content settings-page"
+  }, React.createElement("div", {
+    className: "settings-card"
+  }, React.createElement(SettingsContent, {
+    data: data,
+    act: act
+  }))));
+}
+function SettingsSheet({
+  data,
+  act,
+  onClose
+}) {
+  return React.createElement("div", {
+    className: "scrim",
+    onClick: onClose
+  }, React.createElement("div", {
+    className: "sheet",
+    onClick: e => e.stopPropagation()
+  }, React.createElement("div", {
+    className: "grab"
+  }), React.createElement("div", {
+    className: "form"
+  }, React.createElement(SettingsContent, {
+    data: data,
+    act: act
+  }))));
 }
 function AreaForm({
   area,
@@ -2043,7 +2172,7 @@ function ProjectForm({
 }
 function App() {
   const [data, setData] = useState(null);
-  const [tab, setTab] = useState('pending');
+  const [tab, setTab] = useState(() => window.matchMedia && window.matchMedia('(min-width: 768px)').matches ? 'today' : 'pending');
   const [adding, setAdding] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -2236,13 +2365,84 @@ function App() {
   }, "Cargando…");
   const editingTask = editingId ? data.tasks.find(t => t.id === editingId) : null;
   const openTask = id => setEditingId(id);
-  const navItems = [['pending', 'Pendientes'], ['areas', 'Áreas'], ['contexts', 'Contextos'], ['projects', 'Proyectos'], ['calendar', 'Calendario']];
+  const byDate = (a, b) => {
+    if (!a.dueDate && !b.dueDate) return new Date(a.createdAt) - new Date(b.createdAt);
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return new Date(a.dueDate) - new Date(b.dueDate);
+  };
+  const today = startOfDay(new Date());
+  const inboxCount = data.inbox.filter(i => !i.processed).length;
+  const todayTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) <= today).sort(byDate);
+  const upcomingTasks = data.tasks.filter(t => t.status === 'active' && !t.isSomeday && t.dueDate && startOfDay(t.dueDate) > today).sort(byDate);
+  const completedTasks = data.tasks.filter(t => t.status === 'completed').sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
+  const activeProjects = data.projects.filter(p => p.status === 'active').length;
+  const mobileNavItems = [['pending', 'Pendientes'], ['areas', 'Áreas'], ['contexts', 'Contextos'], ['projects', 'Proyectos'], ['calendar', 'Calendario']];
+  const desktopNavItems = [['inbox', 'Inbox', inboxCount], ['today', 'Today', todayTasks.length], ['upcoming', 'Upcoming', upcomingTasks.length], ['projects', 'Projects', activeProjects], ['completed', 'Completed', completedTasks.length], ['settings', 'Settings', null]];
   return React.createElement("div", {
     className: "app"
+  }, React.createElement("aside", {
+    className: "desktop-sidebar"
+  }, React.createElement("div", {
+    className: "sidebar-brand"
+  }, "To do"), React.createElement("div", {
+    className: "sidebar-nav"
+  }, desktopNavItems.map(([k, l, count]) => React.createElement("button", {
+    key: k,
+    className: 'sidebar-item' + (tab === k ? ' active' : ''),
+    onClick: () => setTab(k)
+  }, React.createElement(Icon, {
+    name: k
+  }), React.createElement("span", null, l), count !== null && React.createElement("strong", null, count)))), React.createElement("button", {
+    className: "sidebar-add",
+    onClick: () => setAdding({})
+  }, "+ Nueva tarea")), React.createElement("main", {
+    className: "main-view"
   }, tab === 'pending' && React.createElement(Pendientes, {
     data: data,
     act: act,
     onOpen: openTask
+  }), tab === 'inbox' && React.createElement(Inbox, {
+    data: data,
+    act: act,
+    onProcess: item => {
+      setProcessing(item);
+    }
+  }), tab === 'today' && React.createElement(TaskListPage, {
+    title: "Today",
+    greeting: "Enfoque del día",
+    stats: `${todayTasks.length} tareas para hoy o vencidas`,
+    tasks: todayTasks,
+    data: data,
+    act: act,
+    onOpen: openTask,
+    onAdd: () => setAdding({}),
+    emptyTitle: "Nada para hoy",
+    emptyText: "Agrega una tarea o revisa Upcoming para planear lo siguiente."
+  }), tab === 'upcoming' && React.createElement(TaskListPage, {
+    title: "Upcoming",
+    greeting: "Lo que viene",
+    stats: `${upcomingTasks.length} tareas programadas`,
+    tasks: upcomingTasks,
+    data: data,
+    act: act,
+    onOpen: openTask,
+    onAdd: () => setAdding({}),
+    emptyTitle: "Sin próximas fechas",
+    emptyText: "Las tareas futuras aparecerán aquí cuando tengan fecha."
+  }), tab === 'completed' && React.createElement(TaskListPage, {
+    title: "Completed",
+    greeting: "Trabajo terminado",
+    stats: `${completedTasks.length} tareas completadas`,
+    tasks: completedTasks,
+    data: data,
+    act: act,
+    onOpen: openTask,
+    emptyTitle: "Aún no hay completadas",
+    emptyText: "Cuando cierres tareas, quedarán aquí para consulta rápida."
+  }), tab === 'settings' && React.createElement(SettingsPage, {
+    data: data,
+    act: act
   }), tab === 'areas' && React.createElement(Areas, {
     data: data,
     onOpenArea: a => setOverlay('area:' + a.id),
@@ -2262,12 +2462,12 @@ function App() {
     data: data,
     act: act,
     onOpen: openTask
-  }), tab === 'pending' && React.createElement("button", {
+  })), (tab === 'pending' || tab === 'today' || tab === 'upcoming') && React.createElement("button", {
     className: "fab",
     onClick: () => setAdding({})
   }, "+"), React.createElement("div", {
     className: "nav"
-  }, navItems.map(([k, l]) => React.createElement("div", {
+  }, mobileNavItems.map(([k, l]) => React.createElement("div", {
     key: k,
     className: 'nav-item' + (tab === k ? ' active' : ''),
     onClick: () => setTab(k)
