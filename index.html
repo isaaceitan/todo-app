@@ -185,7 +185,7 @@
   .sheet-full { border-radius: 0; max-height: 100vh; height: 100dvh; }
   .grab { width: 36px; height: 5px; background: var(--text-3); border-radius: 100px; margin: 8px auto; opacity: 0.5; }
 
-  /* Flow */
+  /* Flow (legacy, kept for EditTask) */
   .flow { display: flex; flex-direction: column; height: 100dvh; padding: max(16px,env(safe-area-inset-top)) 20px max(16px,env(safe-area-inset-bottom)); }
   .progress { display: flex; gap: 4px; margin: 8px 0 24px; }
   .pdot { height: 3px; flex: 1; background: var(--border-strong); border-radius: 100px; }
@@ -202,6 +202,34 @@
   .option.sel { border-color: rgba(79,140,255,0.5); background: rgba(79,140,255,0.08); }
   .option .odot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .option .check { margin-left: auto; color: var(--brand-a); }
+
+  /* Add Task — single-page form */
+  .add-form { display: flex; flex-direction: column; height: 100dvh; }
+  .add-form-header { display: flex; align-items: center; justify-content: space-between;
+    padding: max(16px,env(safe-area-inset-top)) 16px 12px; border-bottom: 1px solid var(--border); }
+  .add-form-body { flex: 1; overflow-y: auto; padding: 16px 16px max(24px,env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 0; }
+  .add-title-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border-strong);
+    padding: 12px 0; font-size: 20px; font-weight: 600; color: var(--text); font-family: inherit; resize: none;
+    outline: none; margin-bottom: 2px; }
+  .add-title-input::placeholder { color: var(--text-3); }
+  .add-notes-input { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border);
+    padding: 10px 0; font-size: 15px; color: var(--text-2); font-family: inherit;
+    outline: none; margin-bottom: 4px; }
+  .add-notes-input::placeholder { color: var(--text-3); }
+  .add-section { padding: 14px 0 4px; border-top: 1px solid var(--border); margin-top: 10px; }
+  .add-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+  .add-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .add-chip { display: flex; align-items: center; gap: 5px; padding: 5px 11px; border-radius: 100px;
+    background: var(--surface); border: 1px solid var(--border); font-size: 13px; color: var(--text-2); cursor: pointer; }
+  .add-chip.sel { background: rgba(79,140,255,0.15); border-color: rgba(79,140,255,0.5); color: var(--text); font-weight: 500; }
+  .odot-sm { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .add-date-input { margin-top: 8px; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-strong);
+    background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit; width: 100%; }
+  .add-select { margin-top: 2px; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font-size: 14px; font-family: inherit; width: 100%; }
+  .add-waiting-row { display: flex; flex-direction: column; }
+  .add-waiting-row label { display: flex; align-items: center; gap: 10px; font-size: 15px; color: var(--text); cursor: pointer; }
+  .add-waiting-row input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--brand-a); cursor: pointer; }
   .actions { display: flex; gap: 10px; padding-top: 16px; }
   .btn { flex: 1; padding: 15px; border-radius: 12px; font-size: 15px; font-weight: 600; text-align: center;
     border: 1px solid var(--border); background: var(--surface); color: var(--text-2); cursor: pointer; }
@@ -1450,226 +1478,112 @@ function AddFlow({
   initialText,
   onClose
 }) {
-  const [step, setStep] = useState(0);
+  const todayStr = fmt(new Date(), {year:'numeric'}) + '-' + String(new Date().getMonth()+1).padStart(2,'0') + '-' + String(new Date().getDate()).padStart(2,'0');
   const [title, setTitle] = useState(initialText || '');
-  const [outcome, setOutcome] = useState('');
-  const [nextAction, setNextAction] = useState('');
+  const [notes, setNotes] = useState('');
   const [project, setProject] = useState('standalone');
   const [ctx, setCtx] = useState(null);
   const [area, setArea] = useState(null);
   const [when, setWhen] = useState('today');
-  const [specific, setSpecific] = useState(fmt(new Date(), {
-    year: 'numeric'
-  }) + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(new Date().getDate()).padStart(2, '0'));
+  const [specific, setSpecific] = useState(todayStr);
   const [rec, setRec] = useState('none');
-  const steps = [{
-    label: 'Paso 1 de 7 · Captura',
-    q: '¿Qué tienes en la mente?',
-    h: 'Escribe lo primero que se te ocurra. No te preocupes por organizarlo — eso viene después.',
-    body: React.createElement("textarea", {
-      className: "ta",
-      rows: "4",
-      autoFocus: true,
-      placeholder: "Ej. Conseguir nuevo proveedor de empaque",
-      value: title,
-      onChange: e => setTitle(e.target.value)
-    })
-  }, {
-    label: 'Paso 2 de 7 · Resultado',
-    q: '¿Cómo se ve esto cuando esté completo?',
-    h: 'Define el “éxito” en una frase. Es opcional, pero ayuda a saber cuándo terminaste.',
-    body: React.createElement("textarea", {
-      className: "ta",
-      rows: "3",
-      placeholder: "Ej. Contrato firmado con mejor precio",
-      value: outcome,
-      onChange: e => setOutcome(e.target.value)
-    })
-  }, {
-    label: 'Paso 3 de 7 · Siguiente acción',
-    q: '¿Cuál es el siguiente paso físico y visible?',
-    h: 'Un verbo en infinitivo. Algo que puedas hacer en menos de una hora.',
-    body: React.createElement("textarea", {
-      className: "ta",
-      rows: "2",
-      placeholder: "Ej. Buscar 3 proveedores en el directorio",
-      value: nextAction,
-      onChange: e => setNextAction(e.target.value)
-    })
-  }, {
-    label: 'Paso 4 de 7 · Proyecto',
-    q: '¿Es parte de un proyecto?',
-    h: 'Si requiere más de un paso, es un proyecto. Si no, déjalo como tarea suelta.',
-    body: React.createElement("div", {
-      className: "options"
-    }, React.createElement("div", {
-      className: 'option' + (project === 'new' ? ' sel' : ''),
-      onClick: () => setProject('new')
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: area ? data.areas.find(a => a.id === area)?.color : '#4F8CFF'
-      }
-    }), "Crear proyecto nuevo con este nombre", project === 'new' && React.createElement("span", {
-      className: "check"
-    }, "✓")), React.createElement("div", {
-      className: 'option' + (project === 'standalone' ? ' sel' : ''),
-      onClick: () => setProject('standalone')
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: 'var(--text-3)'
-      }
-    }), "Es una tarea suelta", project === 'standalone' && React.createElement("span", {
-      className: "check"
-    }, "✓")), data.projects.filter(p => p.status === 'active').map(p => React.createElement("div", {
-      className: 'option' + (project === p.id ? ' sel' : ''),
-      key: p.id,
-      onClick: () => setProject(p.id)
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: data.areas.find(a => a.id === p.areaId)?.color || '#4F8CFF'
-      }
-    }), p.name, project === p.id && React.createElement("span", {
-      className: "check"
-    }, "✓"))))
-  }, {
-    label: 'Paso 5 de 7 · Contexto',
-    q: '¿Dónde / con qué puedes hacerlo?',
-    h: 'El contexto te dice cuándo es ejecutable. Filtras tu lista cuando estés en ese lugar.',
-    body: React.createElement("div", {
-      className: "options"
-    }, React.createElement("div", {
-      className: 'option' + (ctx === null ? ' sel' : ''),
-      onClick: () => setCtx(null)
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: 'var(--text-3)'
-      }
-    }), "Sin contexto", ctx === null && React.createElement("span", {
-      className: "check"
-    }, "✓")), data.contexts.map(c => React.createElement("div", {
-      className: 'option' + (ctx === c.id ? ' sel' : ''),
-      key: c.id,
-      onClick: () => setCtx(c.id)
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: c.color
-      }
-    }), c.name, ctx === c.id && React.createElement("span", {
-      className: "check"
-    }, "✓"))))
-  }, {
-    label: 'Paso 6 de 7 · Área',
-    q: '¿Área de responsabilidad?',
-    h: 'Determina el color y agrupa con otras tareas de la misma esfera de tu vida.',
-    body: React.createElement("div", {
-      className: "options"
-    }, React.createElement("div", {
-      className: 'option' + (area === null ? ' sel' : ''),
-      onClick: () => setArea(null)
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: 'var(--text-3)'
-      }
-    }), "Sin área", area === null && React.createElement("span", {
-      className: "check"
-    }, "✓")), data.areas.map(a => React.createElement("div", {
-      className: 'option' + (area === a.id ? ' sel' : ''),
-      key: a.id,
-      onClick: () => setArea(a.id)
-    }, React.createElement("span", {
-      className: "odot",
-      style: {
-        background: a.color
-      }
-    }), a.name, area === a.id && React.createElement("span", {
-      className: "check"
-    }, "✓"))))
-  }, {
-    label: 'Paso 7 de 7 · Cuándo',
-    q: '¿Cuándo lo haces?',
-    h: 'Solo pon fecha si realmente tiene que ser ese día. Lo demás vive en contexto.',
-    body: React.createElement("div", {
-      className: "options"
-    }, [['today', 'Hoy'], ['tomorrow', 'Mañana'], ['thisWeek', 'Esta semana'], ['noDate', 'Sin fecha (cuando esté en contexto)'], ['someday', 'Algún día / Tal vez'], ['specific', 'Fecha específica…']].map(([v, l]) => React.createElement("div", {
-      className: 'option' + (when === v ? ' sel' : ''),
-      key: v,
-      onClick: () => setWhen(v)
-    }, l, when === v && React.createElement("span", {
-      className: "check"
-    }, "✓"))), when === 'specific' && React.createElement("input", {
-      className: "quick-input",
-      type: "date",
-      value: specific,
-      onChange: e => setSpecific(e.target.value)
-    }), React.createElement("select", {
-      className: "quick-input",
-      value: rec,
-      onChange: e => setRec(e.target.value),
-      style: {
-        marginTop: 4
-      }
-    }, RECURRENCE.map(([v, l]) => React.createElement("option", {
-      value: v,
-      key: v
-    }, "↻ ", l))))
-  }];
-  const s = steps[step];
-  const canNext = step !== 0 || title.trim().length > 0;
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [waitingFrom, setWaitingFrom] = useState('');
+  const [isSomeday, setIsSomeday] = useState(false);
+
   const finish = () => {
-    let dueDate = null,
-      someday = false;
+    if (!title.trim()) return;
+    let dueDate = null;
     const today = startOfDay(new Date());
-    if (when === 'today') dueDate = iso(today);else if (when === 'tomorrow') dueDate = iso(addDays(today, 1));else if (when === 'thisWeek') dueDate = iso(addDays(today, 3));else if (when === 'someday') someday = true;else if (when === 'specific') dueDate = iso(startOfDay(new Date(specific + 'T00:00:00')));
+    if (!isSomeday) {
+      if (when === 'today') dueDate = iso(today);
+      else if (when === 'tomorrow') dueDate = iso(addDays(today, 1));
+      else if (when === 'thisWeek') dueDate = iso(addDays(today, 3));
+      else if (when === 'specific') dueDate = iso(startOfDay(new Date(specific + 'T00:00:00')));
+    }
     act.createTask({
       title: title.trim(),
-      outcome: outcome.trim() || null,
-      nextAction: nextAction.trim() || null,
+      outcome: null,
+      nextAction: notes.trim() || null,
       projectChoice: project,
       contextId: ctx,
       areaId: area,
       dueDate,
-      isSomeday: someday,
-      recurrence: rec
+      isSomeday,
+      recurrence: rec,
+      isWaitingFor: isWaiting,
+      waitingFrom: isWaiting ? (waitingFrom.trim() || null) : null,
     });
     onClose();
   };
-  return React.createElement("div", {
-    className: "scrim",
-    onClick: onClose
-  }, React.createElement("div", {
-    className: "sheet sheet-full",
-    onClick: e => e.stopPropagation()
-  }, React.createElement("div", {
-    className: "flow"
-  }, React.createElement("div", {
-    className: "progress"
-  }, steps.map((_, i) => React.createElement("div", {
-    className: 'pdot' + (i <= step ? ' on' : ''),
-    key: i
-  }))), React.createElement("div", {
-    className: "flow-body"
-  }, React.createElement("div", {
-    className: "step-label"
-  }, s.label), React.createElement("div", {
-    className: "question"
-  }, s.q), React.createElement("div", {
-    className: "hint"
-  }, s.h), s.body), React.createElement("div", {
-    className: "actions"
-  }, React.createElement("button", {
-    className: "btn",
-    onClick: () => step === 0 ? onClose() : setStep(step - 1)
-  }, step === 0 ? 'Cancelar' : '← Atrás'), React.createElement("button", {
-    className: "btn btn-primary",
-    disabled: !canNext,
-    onClick: () => step === steps.length - 1 ? finish() : setStep(step + 1)
-  }, step === steps.length - 1 ? 'Crear tarea ✓' : 'Siguiente →')))));
+
+  const Chip = ({label, active, onClick, color}) => React.createElement('div', {
+    className: 'add-chip' + (active ? ' sel' : ''),
+    onClick
+  }, color && React.createElement('span', {className:'odot-sm', style:{background:color}}), label);
+
+  return React.createElement('div', {className:'scrim', onClick:onClose},
+    React.createElement('div', {className:'sheet sheet-full add-form', onClick:e=>e.stopPropagation()},
+      React.createElement('div', {className:'add-form-header'},
+        React.createElement('button', {className:'btn', onClick:onClose}, 'Cancelar'),
+        React.createElement('h2', {style:{margin:0,fontSize:17,fontWeight:600}}, 'Nueva tarea'),
+        React.createElement('button', {className:'btn btn-primary', disabled:!title.trim(), onClick:finish}, 'Crear ✓')
+      ),
+      React.createElement('div', {className:'add-form-body'},
+        React.createElement('textarea', {className:'add-title-input', rows:2, autoFocus:true, placeholder:'¿Qué tenés que hacer?', value:title, onChange:e=>setTitle(e.target.value)}),
+        React.createElement('input', {className:'add-notes-input', placeholder:'Notas o siguiente acción (opcional)', value:notes, onChange:e=>setNotes(e.target.value)}),
+        React.createElement('div', {className:'add-section'},
+          React.createElement('div', {className:'add-label'}, 'Cuándo'),
+          React.createElement('div', {className:'add-chips'},
+            React.createElement(Chip, {label:'Hoy', active:when==='today'&&!isSomeday, onClick:()=>{setWhen('today');setIsSomeday(false);}}),
+            React.createElement(Chip, {label:'Mañana', active:when==='tomorrow'&&!isSomeday, onClick:()=>{setWhen('tomorrow');setIsSomeday(false);}}),
+            React.createElement(Chip, {label:'Esta semana', active:when==='thisWeek'&&!isSomeday, onClick:()=>{setWhen('thisWeek');setIsSomeday(false);}}),
+            React.createElement(Chip, {label:'Sin fecha', active:when==='noDate'&&!isSomeday, onClick:()=>{setWhen('noDate');setIsSomeday(false);}}),
+            React.createElement(Chip, {label:'Algún día', active:isSomeday, onClick:()=>{setIsSomeday(s=>!s);if(!isSomeday)setWhen('noDate');}}),
+            React.createElement(Chip, {label:'Fecha específica…', active:when==='specific'&&!isSomeday, onClick:()=>{setWhen('specific');setIsSomeday(false);}})
+          ),
+          when === 'specific' && !isSomeday && React.createElement('input', {className:'add-date-input', type:'date', value:specific, onChange:e=>setSpecific(e.target.value)})
+        ),
+        React.createElement('div', {className:'add-section'},
+          React.createElement('div', {className:'add-label'}, 'Proyecto'),
+          React.createElement('div', {className:'add-chips'},
+            React.createElement(Chip, {label:'Tarea suelta', active:project==='standalone', onClick:()=>setProject('standalone')}),
+            React.createElement(Chip, {label:'+ Nuevo proyecto', active:project==='new', onClick:()=>setProject('new'), color:area?data.areas.find(a=>a.id===area)?.color:'#4F8CFF'}),
+            data.projects.filter(p=>p.status==='active').map(p=>
+              React.createElement(Chip, {key:p.id, label:p.name, active:project===p.id, onClick:()=>setProject(p.id), color:data.areas.find(a=>a.id===p.areaId)?.color||'#4F8CFF'})
+            )
+          )
+        ),
+        React.createElement('div', {className:'add-section'},
+          React.createElement('div', {className:'add-label'}, 'Área'),
+          React.createElement('div', {className:'add-chips'},
+            React.createElement(Chip, {label:'Sin área', active:area===null, onClick:()=>setArea(null)}),
+            data.areas.map(a=>React.createElement(Chip, {key:a.id, label:a.name, active:area===a.id, onClick:()=>setArea(a.id), color:a.color}))
+          )
+        ),
+        React.createElement('div', {className:'add-section'},
+          React.createElement('div', {className:'add-label'}, 'Contexto'),
+          React.createElement('div', {className:'add-chips'},
+            React.createElement(Chip, {label:'Sin contexto', active:ctx===null, onClick:()=>setCtx(null)}),
+            data.contexts.map(c=>React.createElement(Chip, {key:c.id, label:c.name, active:ctx===c.id, onClick:()=>setCtx(c.id), color:c.color}))
+          )
+        ),
+        React.createElement('div', {className:'add-section'},
+          React.createElement('div', {className:'add-label'}, 'Repetir'),
+          React.createElement('select', {className:'add-select', value:rec, onChange:e=>setRec(e.target.value)},
+            RECURRENCE.map(([v,l])=>React.createElement('option',{value:v,key:v},'↻ ',l))
+          )
+        ),
+        React.createElement('div', {className:'add-section'},
+          React.createElement('label', {className:'add-waiting-row'},
+            React.createElement('input', {type:'checkbox', checked:isWaiting, onChange:e=>setIsWaiting(e.target.checked)}),
+            'Estoy esperando a alguien'
+          ),
+          isWaiting && React.createElement('input', {className:'add-notes-input', placeholder:'¿A quién esperás?', value:waitingFrom, onChange:e=>setWaitingFrom(e.target.value), style:{marginTop:8}})
+        )
+      )
+    )
+  );
 }
 function EditTask({
   data,
